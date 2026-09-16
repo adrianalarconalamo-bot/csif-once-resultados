@@ -27,7 +27,7 @@ def obtener_resultados_rss():
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "es-ES,es;q=0.9",
     }
-    
+
     print(f"Descargando RSS desde: {RSS_URL}")
     request = urllib.request.Request(RSS_URL, headers=headers)
 
@@ -51,7 +51,9 @@ def obtener_resultados_rss():
         resultado = {}
         for child in item:
             tag = child.tag.split("}")[-1].lower()
-            text = clean_html(child.text or "")
+            
+            # CORRECCIÓN: itertext() extrae todo el texto recursivamente, evitando que el HTML corte el contenido
+            text = clean_html("".join(child.itertext()) or "")
             if not text:
                 continue
 
