@@ -1,281 +1,40 @@
 {
-  "actualizado": "16/09/2026 12:44",
+  "actualizado": "16/09/2026 12:50",
   "resultados": [
     {
-      "elemento": "tipo",
-      "texto": "Cup&oacute;n Diario"
+      "titulo": "",
+      "fecha": "Martes, 15/09/2026",
+      "descripcion": ""
     },
     {
-      "elemento": "fecha",
-      "texto": "Martes, 15/09/2026"
+      "titulo": "",
+      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 1",
+      "descripcion": ""
     },
     {
-      "elemento": "numero",
-      "texto": "55283"
+      "titulo": "",
+      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 2",
+      "descripcion": ""
     },
     {
-      "elemento": "serie",
-      "texto": "022"
+      "titulo": "",
+      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 3",
+      "descripcion": ""
     },
     {
-      "elemento": "importebote",
-      "texto": "0"
+      "titulo": "",
+      "fecha": "Viernes, 11/09/2026",
+      "descripcion": ""
     },
     {
-      "elemento": "tipo",
-      "texto": "Triplex de la ONCE"
+      "titulo": "",
+      "fecha": "S&aacute;bado, 12/09/2026",
+      "descripcion": ""
     },
     {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 1"
-    },
-    {
-      "elemento": "numero",
-      "texto": "123"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Triplex de la ONCE"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 2"
-    },
-    {
-      "elemento": "numero",
-      "texto": "841"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Triplex de la ONCE"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 3"
-    },
-    {
-      "elemento": "numero",
-      "texto": "285"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Mi D&iacute;a"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Martes, 15/09/2026"
-    },
-    {
-      "elemento": "numero",
-      "texto": "26 SEP 1944 03"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Eurojackpot"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Martes, 15/09/2026"
-    },
-    {
-      "elemento": "numero",
-      "texto": "05,06,10,27,42"
-    },
-    {
-      "elemento": "serie",
-      "texto": "01,08"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "59000000"
-    },
-    {
-      "elemento": "fechaproxsorteo",
-      "texto": "18/09/2026"
-    },
-    {
-      "elemento": "impestimado1",
-      "texto": "5900000000"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Dupla de la ONCE"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 1"
-    },
-    {
-      "elemento": "numero",
-      "texto": "09"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Dupla de la ONCE"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 2"
-    },
-    {
-      "elemento": "numero",
-      "texto": "11"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Dupla de la ONCE"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 3"
-    },
-    {
-      "elemento": "numero",
-      "texto": "15"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Cuponazo"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Viernes, 11/09/2026"
-    },
-    {
-      "elemento": "numero",
-      "texto": "94543"
-    },
-    {
-      "elemento": "serie",
-      "texto": "103"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Super 11"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 1"
-    },
-    {
-      "elemento": "numero",
-      "texto": "06,07,11,14,19,34,37,48,52,55,57,60,61,65,70,72,73,79,82,83"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "1000000"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Super 11"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 2"
-    },
-    {
-      "elemento": "numero",
-      "texto": "02,03,10,12,23,30,31,46,48,49,51,58,62,63,64,72,80,82,84,85"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "1000000"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Super 11"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Mi&eacute;rcoles, 16/09/2026, Sorteo 3"
-    },
-    {
-      "elemento": "numero",
-      "texto": "01,04,05,09,15,17,22,23,27,36,38,51,53,56,61,73,78,79,80,84"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "1000000"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Sueldazo Fin de Semana"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "S&aacute;bado, 12/09/2026"
-    },
-    {
-      "elemento": "numero",
-      "texto": "58939"
-    },
-    {
-      "elemento": "serie",
-      "texto": "024"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "adic",
-      "texto": "22156031-71238025-93458054-97237036"
-    },
-    {
-      "elemento": "tipo",
-      "texto": "Sueldazo Fin de Semana"
-    },
-    {
-      "elemento": "fecha",
-      "texto": "Domingo, 13/09/2026"
-    },
-    {
-      "elemento": "numero",
-      "texto": "33549"
-    },
-    {
-      "elemento": "serie",
-      "texto": "019"
-    },
-    {
-      "elemento": "importebote",
-      "texto": "0"
-    },
-    {
-      "elemento": "adic",
-      "texto": "14062021-23416023-98527053-99212048"
+      "titulo": "",
+      "fecha": "Domingo, 13/09/2026",
+      "descripcion": ""
     }
   ]
 }
