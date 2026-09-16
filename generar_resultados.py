@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-URL del RSS de Juegos ONCE
+# URL del RSS de Juegos ONCE
 
 RSS_URL = "https://www.juegosonce.es/rss/sorteos2.xml"
 OUTPUT_FILE = "resultados.json"
