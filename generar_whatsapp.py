@@ -2,174 +2,91 @@ import json
 import html
 import re
 import os
-import unicodedata
 import requests
-
-from datetime import datetime
 from pathlib import Path
-
+from datetime import datetime
 
 INPUT_FILE = "resultados.json"
 OUTPUT_FILE = "whatsapp.txt"
-
 TELEFONO = "652 33 86 27"
 
 
 def limpiar_texto(texto):
-
     if not texto:
         return ""
-
-    texto = html.unescape(
-        str(texto)
-    )
-
-    texto = re.sub(
-        r"\s+",
-        " ",
-        texto
-    )
-
-    return texto.strip()
+    return html.unescape(str(texto)).strip()
 
 
-def normalizar(texto):
+def formatear_super11(numero_str):
+    nums = re.findall(r'\d+', str(numero_str))
 
-    texto = limpiar_texto(
-        texto
-    )
+    if not nums:
+        return numero_str
 
-    texto = unicodedata.normalize(
-        "NFD",
-        texto
-    )
+    lineas = []
 
-    texto = "".join(
-        caracter
-        for caracter in texto
-        if unicodedata.category(caracter) != "Mn"
-    )
-
-    return texto.upper()
-
-
-def formatear_super11(numero):
-
-    numeros = re.findall(
-        r"\d+",
-        str(numero)
-    )
-
-    numeros = [
-        numero.zfill(2)
-        for numero in numeros
-    ]
-
-    grupos = []
-
-    for i in range(
-        0,
-        len(numeros),
-        10
-    ):
-
-        grupos.append(
-            " · ".join(
-                numeros[i:i + 10]
-            )
+    for i in range(0, len(nums), 10):
+        bloque = " · ".join(
+            f"{int(n):02d}"
+            for n in nums[i:i + 10]
         )
+        lineas.append(bloque)
 
-    return "\n".join(
-        grupos
-    )
+    return "\n".join(lineas)
 
 
-def enviar_telegram(mensaje):
+def enviar_telegram(texto_mensaje):
 
-    token = os.environ.get(
-        "TELEGRAM_BOT_TOKEN"
-    )
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
-    chat_id = os.environ.get(
-        "TELEGRAM_CHAT_ID"
-    )
-
-    if not token or not chat_id:
-
-        print(
-            "⚠️ Faltan las credenciales de Telegram."
-        )
-
+    if not bot_token or not chat_id:
+        print("⚠️ No se envía a Telegram: Faltan secretos.")
         return
 
-    url = (
-        f"https://api.telegram.org/"
-        f"bot{token}/sendMessage"
-    )
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
     payload = {
         "chat_id": chat_id,
-        "text": mensaje
+        "text": texto_mensaje,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True
     }
 
     try:
-
         respuesta = requests.post(
             url,
             json=payload,
-            timeout=30
+            timeout=10
         )
 
         if respuesta.ok:
-
-            print(
-                "✅ Mensaje enviado a Telegram."
-            )
-
+            print("Mensaje enviado correctamente a Telegram.")
         else:
-
             print(
-                "❌ Error Telegram:",
-                respuesta.text
+                f"⚠️ Telegram respondió con "
+                f"código {respuesta.status_code}"
             )
 
     except Exception as error:
-
-        print(
-            "❌ Error conectando con Telegram:",
-            error
-        )
+        print(f"⚠️ Error enviando a Telegram: {error}")
 
 
-def obtener_resultados():
+def generar_whatsapp():
 
-    if not Path(
-        INPUT_FILE
-    ).exists():
+    ruta = Path(INPUT_FILE)
 
-        raise RuntimeError(
-            f"No existe {INPUT_FILE}"
-        )
+    if not ruta.exists():
+        print(f"⚠️ No existe {INPUT_FILE}")
+        return
 
     with open(
-        INPUT_FILE,
+        ruta,
         "r",
         encoding="utf-8"
     ) as archivo:
 
-        datos = json.load(
-            archivo
-        )
-
-    if not isinstance(
-        datos,
-        dict
-    ):
-
-        raise RuntimeError(
-            "resultados.json no tiene "
-            "la estructura esperada."
-        )
+        datos = json.load(archivo)
 
     resultados = datos.get(
         "resultados",
@@ -177,242 +94,299 @@ def obtener_resultados():
     )
 
     if not resultados:
+        print("⚠️ No hay resultados.")
+        return
 
-        raise RuntimeError(
-            "resultados.json no contiene resultados."
-        )
-
-    return datos
-
-
-def generar_whatsapp():
-
-    datos = obtener_resultados()
-
-    resultados = datos["resultados"]
-
-    actualizado = datos.get(
+    actualizado_str = datos.get(
         "actualizado",
-        datetime.now().strftime(
+        ""
+    )
+
+    try:
+
+        dt = datetime.strptime(
+            actualizado_str,
             "%d/%m/%Y %H:%M"
         )
-    )
+
+        dias_minus = [
+            "lunes",
+            "martes",
+            "miércoles",
+            "jueves",
+            "viernes",
+            "sábado",
+            "domingo"
+        ]
+
+        meses_val = [
+            "enero",
+            "febrero",
+            "marzo",
+            "abril",
+            "mayo",
+            "junio",
+            "julio",
+            "agosto",
+            "septiembre",
+            "octubre",
+            "noviembre",
+            "diciembre"
+        ]
+
+        fecha_larga = (
+            f"{dias_minus[dt.weekday()]}, "
+            f"{dt.day} de "
+            f"{meses_val[dt.month - 1]} de "
+            f"{dt.year}"
+        )
+
+        dias_cap = [
+            "Lunes",
+            "Martes",
+            "Miércoles",
+            "Jueves",
+            "Viernes",
+            "Sábado",
+            "Domingo"
+        ]
+
+        fecha_corta = (
+            f"{dias_cap[dt.weekday()]}, "
+            f"{dt.day:02d}/"
+            f"{dt.month:02d}/"
+            f"{dt.year}"
+        )
+
+        hora_act = dt.strftime("%H:%M")
+
+    except Exception:
+
+        fecha_larga = actualizado_str
+        fecha_corta = actualizado_str
+        hora_act = "21:30"
+
+
+    cupon_principal = None
+    mi_dia = None
+    triplex_list = []
+    dupla_list = []
+    super11_list = []
+
+
+    for r in resultados:
+
+        tipo = limpiar_texto(
+            r.get("tipo", "")
+        ).upper()
+
+        if (
+            "CUPÓN" in tipo
+            or "CUPONAZO" in tipo
+            or "SUELDAZO" in tipo
+        ):
+            cupon_principal = r
+
+        elif (
+            "MI DÍA" in tipo
+            or "MI DIA" in tipo
+        ):
+            mi_dia = r
+
+        elif "TRIPLEX" in tipo:
+            triplex_list.append(r)
+
+        elif (
+            "SÚPER 11" in tipo
+            or "SUPER 11" in tipo
+        ):
+            super11_list.append(r)
+
+        elif "DUPLA" in tipo:
+            dupla_list.append(r)
+
 
     lineas = []
 
-    lineas.append(
-        "📢 CSIF INFORMA"
-    )
+    separador = "━━━━━━━━━━━━━━━━━━"
 
+
+    # ==========================================================
+    # CABECERA
+    # ==========================================================
+
+    lineas.append("📢 CSIF INFORMA")
     lineas.append("")
 
-    lineas.append(
-        "🎟️ RESULTADOS ONCE"
-    )
+    lineas.append("🎟️ RESULTADOS ONCE")
+    lineas.append(f"📅 {fecha_larga}")
+    lineas.append(f"🕒 Actualizado: {hora_act}")
 
-    lineas.append(
-        f"Actualizado: {actualizado}"
-    )
 
-    lineas.append("")
+    # ==========================================================
+    # CUPÓN PRINCIPAL
+    # ==========================================================
 
-    triplex = 0
-    dupla = 0
+    if cupon_principal:
 
-    for resultado in resultados:
+        lineas.append("")
+        lineas.append(separador)
+        lineas.append("")
 
-        tipo_original = limpiar_texto(
-            resultado.get(
+        tipo_cupon = limpiar_texto(
+            cupon_principal.get(
                 "tipo",
-                ""
+                "Cupón Diario"
             )
         )
 
-        tipo = normalizar(
-            tipo_original
+        lineas.append(
+            f"🎟️ {tipo_cupon}"
         )
 
-        fecha = limpiar_texto(
-            resultado.get(
-                "fecha",
-                ""
-            )
+        lineas.append(
+            fecha_corta
         )
 
-        numero = limpiar_texto(
-            resultado.get(
-                "numero",
-                ""
-            )
+        numero = cupon_principal.get(
+            "numero",
+            ""
         )
 
-        serie = limpiar_texto(
-            resultado.get(
-                "serie",
-                ""
-            )
+        serie = cupon_principal.get(
+            "serie",
+            ""
         )
 
-        bote = limpiar_texto(
-            resultado.get(
-                "importebote",
-                "0"
-            )
+        lineas.append(
+            str(numero)
         )
 
-        if not tipo:
-            continue
-
-        # CUPÓN
-        if (
-            "CUPON" in tipo
-            or "SUELDAZO" in tipo
-        ):
-
+        if serie:
             lineas.append(
-                "🎫 CUPÓN"
+                f"Serie: {serie}"
             )
 
-            lineas.append(
-                fecha
-            )
 
-            if numero:
+    # ==========================================================
+    # TRIPLEX
+    # ==========================================================
 
-                lineas.append(
-                    f"Número: {numero}"
-                )
+    for idx, item in enumerate(
+        triplex_list,
+        start=1
+    ):
 
-            if serie:
+        lineas.append("")
+        lineas.append(separador)
+        lineas.append("")
 
-                lineas.append(
-                    f"Serie: {serie}"
-                )
+        lineas.append(
+            f"🔵 Triplex de la ONCE — Sorteo {idx}"
+        )
 
-            lineas.append("")
+        lineas.append(
+            str(item.get("numero", ""))
+        )
 
-        # MI DÍA
-        elif "MI DIA" in tipo:
 
-            lineas.append(
-                "📅 MI DÍA"
-            )
+    # ==========================================================
+    # MI DÍA
+    # ==========================================================
 
-            lineas.append(
-                fecha
-            )
+    if mi_dia:
 
-            lineas.append(
-                f"Número: {numero}"
-            )
+        lineas.append("")
+        lineas.append(separador)
+        lineas.append("")
 
-            lineas.append("")
+        lineas.append("🎟️ Mi Día")
 
-        # TRIPLEX
-        elif "TRIPLEX" in tipo:
+        lineas.append(
+            str(mi_dia.get("numero", ""))
+        )
 
-            triplex += 1
 
-            lineas.append(
-                "🔢 TRIPLEX DE LA ONCE"
-            )
+    # ==========================================================
+    # DUPLA
+    # ==========================================================
 
-            lineas.append(
-                f"{fecha}, Sorteo {triplex}"
-            )
+    for idx, item in enumerate(
+        dupla_list,
+        start=1
+    ):
 
-            lineas.append(
-                f"Número: {numero}"
-            )
+        lineas.append("")
+        lineas.append(separador)
+        lineas.append("")
 
-            lineas.append("")
+        lineas.append(
+            f"🟢 Dupla de la ONCE — Sorteo {idx}"
+        )
 
-        # DUPLA
-        elif "DUPLA" in tipo:
+        lineas.append(
+            str(item.get("numero", ""))
+        )
 
-            dupla += 1
 
-            lineas.append(
-                "🔢 DUPLA DE LA ONCE"
-            )
+    # ==========================================================
+    # SUPER 11
+    # ==========================================================
 
-            lineas.append(
-                f"{fecha}, Sorteo {dupla}"
-            )
+    for idx, item in enumerate(
+        super11_list,
+        start=1
+    ):
 
-            lineas.append(
-                f"Número: {numero}"
-            )
+        lineas.append("")
+        lineas.append(separador)
+        lineas.append("")
 
-            lineas.append("")
+        lineas.append(
+            f"🔴 Super 11 — Sorteo {idx}"
+        )
 
-        # SUPER 11
-        elif (
-            "SUPER 11" in tipo
-            or "SUREP 11" in tipo
-        ):
+        num_s11 = item.get(
+            "numero",
+            ""
+        )
 
-            lineas.append(
-                "🔢 SUPER 11"
-            )
+        lineas.append(
+            formatear_super11(num_s11)
+        )
 
-            lineas.append(
-                fecha
-            )
 
-            lineas.append(
-                formatear_super11(
-                    numero
-                )
-            )
+    # ==========================================================
+    # PIE
+    # ==========================================================
 
-            if bote and bote != "0":
+    lineas.append("")
+    lineas.append(separador)
+    lineas.append("")
 
-                lineas.append(
-                    f"Bote: {bote}"
-                )
-
-            lineas.append("")
-
-        # OTROS
-        else:
-
-            lineas.append(
-                f"🎟️ {tipo_original}"
-            )
-
-            if fecha:
-                lineas.append(
-                    fecha
-                )
-
-            if numero:
-                lineas.append(
-                    f"Número: {numero}"
-                )
-
-            if serie:
-                lineas.append(
-                    f"Serie: {serie}"
-                )
-
-            lineas.append("")
-
-    lineas.append(
-        "🌙 Buenas noches."
-    )
+    lineas.append("🌙 Buenas noches.")
+    lineas.append("")
 
     lineas.append(
         f"📞 {TELEFONO}"
     )
 
+    lineas.append("")
+
     lineas.append(
         "🤝 CSIF, todo por todos."
     )
 
-    mensaje = "\n".join(
-        lineas
+
+    texto_final = (
+        "\n".join(lineas).strip()
+        + "\n"
     )
+
+
+    # ==========================================================
+    # GUARDAR
+    # ==========================================================
 
     with open(
         OUTPUT_FILE,
@@ -421,26 +395,18 @@ def generar_whatsapp():
     ) as archivo:
 
         archivo.write(
-            mensaje
+            texto_final
         )
 
-    print(
-        f"{OUTPUT_FILE} creado correctamente."
-    )
 
     print(
-        f"Resultados procesados: {len(resultados)}"
+        f"{OUTPUT_FILE} generado correctamente."
     )
 
     enviar_telegram(
-        mensaje
+        texto_final
     )
 
 
-def main():
-
-    generar_whatsapp()
-
-
 if __name__ == "__main__":
-    main()
+    generar_whatsapp()
