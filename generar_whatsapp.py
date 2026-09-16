@@ -2,6 +2,7 @@ import json
 import html
 import re
 import os
+import unicodedata
 import requests
 from pathlib import Path
 from datetime import datetime
@@ -14,6 +15,14 @@ TELEFONO = "652 33 86 27"
 def limpiar_texto(texto):
     if not texto: return ""
     return html.unescape(str(texto)).strip()
+
+
+def normalizar(texto):
+    """Elimina tildes y pasa a mayúsculas para evitar fallos de coincidencia"""
+    if not texto: return ""
+    texto_limpio = limpiar_texto(texto)
+    nfkd = unicodedata.normalize('NFKD', texto_limpio)
+    return "".join([c for c in nfkd if not unicodedata.combining(c)]).upper()
 
 
 def obtener_numero_sorteo(texto):
@@ -40,31 +49,39 @@ def enviar_telegram(texto_mensaje):
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
     if not bot_token or not chat_id:
-        print("⚠️ No se envía a Telegram: Faltan secretos.")
+        print("⚠️ No se envía a Telegram: Faltan secretos (TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID).")
         return
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": texto_mensaje,
-        "parse_mode": "Markdown",
+        # Se elimina 'parse_mode: Markdown' para evitar rechazos por caracteres especiales
         "disable_web_page_preview": True
     }
     try:
-        requests.post(url, json=payload, timeout=10)
-    except:
-        pass
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            print("✅ Mensaje enviado a Telegram correctamente.")
+        else:
+            print(f"❌ Error al enviar a Telegram (Código {response.status_code}): {response.text}")
+    except Exception as e:
+        print(f"❌ Excepción al conectar con la API de Telegram: {e}")
 
 
 def generar_whatsapp():
     ruta = Path(INPUT_FILE)
-    if not ruta.exists(): return
+    if not ruta.exists():
+        print(f"⚠️ No se encontró el archivo de entrada: {INPUT_FILE}")
+        return
 
     with open(ruta, "r", encoding="utf-8") as archivo:
         datos = json.load(archivo)
 
     resultados = datos.get("resultados", [])
-    if not resultados: return
+    if not resultados:
+        print("⚠️ El archivo JSON no contiene resultados.")
+        return
 
     # Procesar fecha y hora de actualización
     actualizado_str = datos.get("actualizado", "")
@@ -72,19 +89,18 @@ def generar_whatsapp():
         dt = datetime.strptime(actualizado_str, "%d/%m/%Y %H:%M")
         dias_minus = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
         meses_val = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-        
+
         fecha_larga = f"{dias_minus[dt.weekday()]}, {dt.day} de {meses_val[dt.month - 1]} de {dt.year}"
-        
         dias_cap = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
         fecha_corta = f"{dias_cap[dt.weekday()]}, {dt.day:02d}/{dt.month:02d}/{dt.year}"
-        
+
         hora_act = dt.strftime("%H:%M")
     except:
         fecha_larga = actualizado_str
         fecha_corta = actualizado_str
-        hora_act = "21:41"
+        hora_act = datetime.now().strftime("%H:%M")
 
-    # Clasificar resultados por bloques
+    # Clasificar resultados por bloques usando normalización robusta
     cupon_principal = None
     mi_dia = None
     triplex_dict = {}
@@ -92,18 +108,19 @@ def generar_whatsapp():
     super11_dict = {}
 
     for r in resultados:
-        tipo = limpiar_texto(r.get("tipo", "")).upper()
-        num_sorteo = obtener_numero_sorteo(tipo) or 1
+        tipo_original = r.get("tipo", "")
+        tipo_norm = normalizar(tipo_original)
+        num_sorteo = obtener_numero_sorteo(tipo_original) or 1
 
-        if "CUPÓN" in tipo or "CUPONAZO" in tipo or "SUELDAZO" in tipo:
+        if any(k in tipo_norm for k in ["CUPON", "CUPONAZO", "SUELDAZO", "DIARIO"]):
             cupon_principal = r
-        elif "MI DÍA" in tipo or "MI DIA" in tipo:
+        elif "MI DIA" in tipo_norm:
             mi_dia = r
-        elif "TRIPLEX" in tipo:
+        elif "TRIPLEX" in tipo_norm:
             triplex_dict[num_sorteo] = r
-        elif "SÚPER 11" in tipo or "SUPER 11" in tipo:
+        elif "SUPER 11" in tipo_norm or "SUREP 11" in tipo_norm:
             super11_dict[num_sorteo] = r
-        elif "DUPLA" in tipo:
+        elif "DUPLA" in tipo_norm:
             dupla_dict[num_sorteo] = r
 
     # COMENZAR A MAQUETAR EL MENSAJE
@@ -113,7 +130,7 @@ def generar_whatsapp():
     lineas.append("🎟️ RESULTADOS ONCE")
     lineas.append(f"📅 {fecha_larga}")
     lineas.append(f"🕒 Actualizado: {hora_act}")
-    
+
     separador = "━━━━━━━━━━━━━━━━━━"
 
     # 1. Cupón Principal
@@ -169,7 +186,7 @@ def generar_whatsapp():
             lineas.append(f"{fecha_corta}, Sorteo {i}")
             num_s11 = super11_dict[i].get('numero', '')
             lineas.append(formatear_super11(num_s11))
-            
+
             bote = super11_dict[i].get('importebote', super11_dict[i].get('bote', ''))
             if bote and bote != "0":
                 try:
@@ -194,6 +211,7 @@ def generar_whatsapp():
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as archivo:
         archivo.write(texto_final)
+    print(f"💾 Archivo local {OUTPUT_FILE} generado correctamente.")
 
     enviar_telegram(texto_final)
 
