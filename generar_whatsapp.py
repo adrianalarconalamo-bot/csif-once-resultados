@@ -21,7 +21,6 @@ def formatear_numero(numero):
     if not numero:
         return ""
 
-    # Para listas de números del Super 11
     if "," in numero:
         numeros = [n.strip() for n in numero.split(",") if n.strip()]
         return " · ".join(numeros)
@@ -50,7 +49,6 @@ def formatear_resultado(resultado):
         or resultado.get("adicional")
         or ""
     )
-    descripcion = limpiar_texto(resultado.get("descripcion", ""))
 
     lineas = []
 
@@ -78,9 +76,6 @@ def formatear_resultado(resultado):
         lineas.append(fecha)
 
     if numero:
-        numero_formateado = formatear_numero(numero)
-
-        # Si es una lista larga de números, la ponemos en líneas
         if "," in numero:
             numeros = [n.strip() for n in numero.split(",") if n.strip()]
 
@@ -92,9 +87,9 @@ def formatear_resultado(resultado):
                 lineas.append(f"*{primera}*")
                 lineas.append(f"*{segunda}*")
             else:
-                lineas.append(f"*{numero_formateado}*")
+                lineas.append(f"*{formatear_numero(numero)}*")
         else:
-            lineas.append(f"*{numero_formateado}*")
+            lineas.append(f"*{numero}*")
 
     if serie:
         lineas.append(f"Serie: *{serie}*")
@@ -110,14 +105,11 @@ def formatear_resultado(resultado):
     if adic:
         lineas.append(f"Adicional: *{adic}*")
 
-    # Si el RSS trae información adicional y no hay número
-    if descripcion and not numero:
-        lineas.append(descripcion)
-
     return "\n".join(lineas)
 
 
 def generar_whatsapp():
+
     ruta = Path(INPUT_FILE)
 
     if not ruta.exists():
@@ -138,17 +130,13 @@ def generar_whatsapp():
         print("AVISO: No hay resultados para generar WhatsApp.")
         return
 
-    # ---------------------------------------------------------
-    # CABECERA
-    # ---------------------------------------------------------
-
     lineas = []
 
+    # CABECERA
     lineas.append("📢 *CSIF INFORMA*")
     lineas.append("")
     lineas.append("🎟️ *RESULTADOS ONCE*")
 
-    # Utilizamos la fecha de actualización del JSON
     actualizado = limpiar_texto(datos.get("actualizado", ""))
 
     if actualizado:
@@ -158,31 +146,80 @@ def generar_whatsapp():
                 "%d/%m/%Y %H:%M"
             )
 
-            fecha_texto = fecha_hora.strftime(
-                "%A, %d de %B de %Y"
+            dias = [
+                "lunes",
+                "martes",
+                "miércoles",
+                "jueves",
+                "viernes",
+                "sábado",
+                "domingo"
+            ]
+
+            meses = [
+                "enero",
+                "febrero",
+                "marzo",
+                "abril",
+                "mayo",
+                "junio",
+                "julio",
+                "agosto",
+                "septiembre",
+                "octubre",
+                "noviembre",
+                "diciembre"
+            ]
+
+            fecha_texto = (
+                f"{dias[fecha_hora.weekday()]}, "
+                f"{fecha_hora.day} de "
+                f"{meses[fecha_hora.month - 1]} de "
+                f"{fecha_hora.year}"
             )
 
-            # Traducción de días y meses al español
-            dias = {
-                "Monday": "lunes",
-                "Tuesday": "martes",
-                "Wednesday": "miércoles",
-                "Thursday": "jueves",
-                "Friday": "viernes",
-                "Saturday": "sábado",
-                "Sunday": "domingo",
-            }
+            lineas.append(f"📅 *{fecha_texto}*")
+            lineas.append(
+                f"🕒 Actualizado: {fecha_hora.strftime('%H:%M')}"
+            )
 
-            meses = {
-                "January": "enero",
-                "February": "febrero",
-                "March": "marzo",
-                "April": "abril",
-                "May": "mayo",
-                "June": "junio",
-                "July": "julio",
-                "August": "agosto",
-                "September": "septiembre",
-                "October": "octubre",
-                "November": "noviembre",
-                "December": "
+        except ValueError:
+            lineas.append(f"🕒 Actualizado: {actualizado}")
+
+    lineas.append("")
+    lineas.append("━━━━━━━━━━━━━━━━━━")
+    lineas.append("")
+
+    # TODOS LOS RESULTADOS DEL JSON
+    for resultado in resultados:
+
+        texto = formatear_resultado(resultado)
+
+        if texto:
+            lineas.append(texto)
+            lineas.append("")
+            lineas.append("━━━━━━━━━━━━━━━━━━")
+            lineas.append("")
+
+    # PIE DEL MENSAJE
+    lineas.append("🌙 *Buenas noches.*")
+    lineas.append("")
+    lineas.append(f"📞 *{TELEFONO}*")
+    lineas.append("")
+    lineas.append("🤝 *CSIF, todo por todos.*")
+
+    texto_final = "\n".join(lineas).strip() + "\n"
+
+    with open(
+        OUTPUT_FILE,
+        "w",
+        encoding="utf-8"
+    ) as archivo:
+        archivo.write(texto_final)
+
+    print(f"Archivo '{OUTPUT_FILE}' creado correctamente.")
+    print(f"Resultados incluidos: {len(resultados)}")
+
+
+if __name__ == "__main__":
+    generar_whatsapp()
