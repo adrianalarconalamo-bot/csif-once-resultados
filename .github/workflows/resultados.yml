@@ -3,10 +3,8 @@ name: Resultados
 on:
   workflow_dispatch:
   schedule:
-    # Intento 1: 21:30 h (España / 19:30 UTC)
+    # Se ejecuta a las 21:30 (hora peninsular de España / 19:30 UTC)
     - cron: "30 19 * * *"
-    # Intento 2: 21:35 h (España / 19:35 UTC)
-    - cron: "35 19 * * *"
 
 permissions:
   contents: write
@@ -32,7 +30,7 @@ jobs:
       - name: Ejecutar generador de resultados
         run: python generar_resultados.py
 
-      - name: Generar texto para WhatsApp / Telegram
+      - name: Generar texto para WhatsApp y Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
