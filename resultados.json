@@ -1,139 +1,31 @@
 {
-  "actualizado": "16/09/2026 22:36",
-  "resultados": [
-    {
-      "tipo": "Cup&oacute;n Diario",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026",
-      "numero": "33548",
-      "serie": "032",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Triplex de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 1",
-      "numero": "123",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Triplex de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 2",
-      "numero": "841",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Triplex de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 3",
-      "numero": "285",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Triplex de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 4",
-      "numero": "253",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Triplex de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 5",
-      "numero": "511",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Mi D&iacute;a",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026",
-      "numero": "02 FEB 1943 07",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Eurojackpot",
-      "fecha": "Martes, 15/09/2026",
-      "numero": "05,06,10,27,42",
-      "serie": "01,08",
-      "importebote": "59000000",
-      "premiosprevistos": "18/09/2026 5900000000"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 1",
-      "numero": "09",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 2",
-      "numero": "11",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 3",
-      "numero": "15",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 4",
-      "numero": "14",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 5",
-      "numero": "08",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Cuponazo",
-      "fecha": "Viernes, 11/09/2026",
-      "numero": "94543",
-      "serie": "103",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Super 11",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 1",
-      "numero": "06,07,11,14,19,34,37,48,52,55,57,60,61,65,70,72,73,79,82,83",
-      "importebote": "1000000"
-    },
-    {
-      "tipo": "Super 11",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 2",
-      "numero": "02,03,10,12,23,30,31,46,48,49,51,58,62,63,64,72,80,82,84,85",
-      "importebote": "1000000"
-    },
-    {
-      "tipo": "Super 11",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 3",
-      "numero": "01,04,05,09,15,17,22,23,27,36,38,51,53,56,61,73,78,79,80,84",
-      "importebote": "1000000"
-    },
-    {
-      "tipo": "Super 11",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 4",
-      "numero": "05,07,11,13,18,20,34,39,44,46,56,58,59,62,63,65,67,73,79,85",
-      "importebote": "1000000"
-    },
-    {
-      "tipo": "Super 11",
-      "fecha": "Mi&eacute;rcoles, 16/09/2026, Sorteo 5",
-      "numero": "04,07,10,14,17,18,19,21,23,24,25,32,40,42,58,62,67,70,75,79",
-      "importebote": "1000000"
-    },
-    {
-      "tipo": "Sueldazo Fin de Semana",
-      "fecha": "S&aacute;bado, 12/09/2026",
-      "numero": "58939",
-      "serie": "024",
-      "importebote": "0",
-      "adic": "22156031-71238025-93458054-97237036"
-    },
-    {
-      "tipo": "Sueldazo Fin de Semana",
-      "fecha": "Domingo, 13/09/2026",
-      "numero": "33549",
-      "serie": "019",
-      "importebote": "0",
-      "adic": "14062021-23416023-98527053-99212048"
-    }
-  ]
+    "actualizado": "16/09/2026 21:15",
+    "resultados": [
+        {
+            "tipo": "Cupón Diario",
+            "numero": "12345",
+            "serie": "012"
+        },
+        {
+            "tipo": "Triplex de la ONCE Sorteo 1",
+            "numero": "123"
+        },
+        {
+            "tipo": "Triplex de la ONCE Sorteo 2",
+            "numero": "456"
+        },
+        {
+            "tipo": "Mi Día",
+            "numero": "12/10/1980 - 05"
+        },
+        {
+            "tipo": "Dupla de la ONCE Sorteo 1",
+            "numero": "12"
+        },
+        {
+            "tipo": "Super 11 Sorteo 1",
+            "numero": "01, 05, 12, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 81, 85, 90",
+            "importebote": "0"
+        }
+    ]
 }
