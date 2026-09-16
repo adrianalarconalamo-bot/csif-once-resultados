@@ -1,4 +1,4 @@
-import urllib.request
+ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
@@ -21,42 +21,40 @@ def main():
     raiz = ET.fromstring(datos)
 
     texto = []
+
     texto.append("🍀 RESULTADOS ONCE")
     texto.append(datetime.now().strftime("%d/%m/%Y"))
     texto.append("")
 
-    # Solo procesamos elementos que realmente tengan título
-    # y descripción con contenido.
-    for elemento in raiz.iter():
-        nombre = elemento.find("title")
-        descripcion = elemento.find("description")
+    # Buscar todos los elementos <item> del RSS
+    items = raiz.findall(".//item")
 
-        if nombre is None or not nombre.text:
-            continue
+    print(f"Items encontrados: {len(items)}")
 
-        titulo = nombre.text.strip()
+    for item in items:
+        titulo = item.findtext("title", default="").strip()
+        descripcion = item.findtext("description", default="").strip()
 
-        if descripcion is None or not descripcion.text:
-            continue
-
-        descripcion_texto = descripcion.text.strip()
-
-        # Ignorar elementos sin información útil
-        if not descripcion_texto:
+        if not titulo:
             continue
 
         texto.append(titulo)
-        texto.append(descripcion_texto)
+
+        if descripcion:
+            texto.append(descripcion)
+
         texto.append("")
 
     Path("salida").mkdir(exist_ok=True)
 
+    contenido = "\n".join(texto)
+
     Path("salida/mensaje.txt").write_text(
-        "\n".join(texto),
+        contenido,
         encoding="utf-8"
     )
 
-    print("\n".join(texto))
+    print(contenido)
 
 
 if __name__ == "__main__":
