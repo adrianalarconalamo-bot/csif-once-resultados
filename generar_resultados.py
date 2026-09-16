@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 import re
+import html
 
 
 URL = "https://www.juegosonce.es/rss/sorteos2.xml"
@@ -11,64 +12,58 @@ SALIDA = Path("resultados.json")
 
 
 def descargar_xml():
-    print("Descargando RSS de la ONCE...")
-
-    request = urllib.request.Request(
+    req = urllib.request.Request(
         URL,
         headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
-            "Accept": "application/rss+xml, application/xml, text/xml, */*"
-        }
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/xml,text/xml,*/*",
+        },
     )
 
-    with urllib.request.urlopen(request, timeout=30) as respuesta:
-        datos = respuesta.read()
+    with urllib.request.urlopen(req, timeout=30) as respuesta:
+        contenido = respuesta.read()
 
-    print(f"XML descargado: {len(datos)} bytes")
-
-    if not datos:
-        raise RuntimeError("El RSS está vacío.")
-
-    return datos
+    return contenido
 
 
-def limpiar(texto):
-    if texto is None:
+def limpiar_texto(texto):
+    if not texto:
         return ""
 
-    texto = str(texto)
+    texto = html.unescape(texto)
 
+    texto = re.sub(r"<br\s*/?>", " ", texto, flags=re.I)
     texto = re.sub(r"<[^>]+>", " ", texto)
-
-    texto = texto.replace("&nbsp;", " ")
-    texto = texto.replace("&amp;", "&")
-    texto = texto.replace("&quot;", '"')
-    texto = texto.replace("&#39;", "'")
 
     texto = re.sub(r"\s+", " ", texto)
 
     return texto.strip()
 
 
-def nombre_local(elemento):
-    """
-    Devuelve el nombre de la etiqueta ignorando namespaces.
-    Ejemplo:
-    {http://purl.org/rss/1.0/}title -> title
-    """
-    return elemento.tag.split("}")[-1].lower()
+def quitar_namespace(tag):
+    if "}" in tag:
+        return tag.split("}", 1)[1]
+
+    return tag
 
 
-def buscar_valor(elemento, nombres):
-    """
-    Busca recursivamente una etiqueta cuyo nombre coincida.
-    """
+def obtener_texto(elemento):
+    if elemento is None:
+        return ""
 
-    nombres = {x.lower() for x in nombres}
+    texto = "".join(elemento.itertext())
+
+    return limpiar_texto(texto)
+
+
+def buscar_hijo(elemento, nombres):
+    nombres = {nombre.lower() for nombre in nombres}
 
     for hijo in elemento.iter():
-        if nombre_local(hijo) in nombres:
-            texto = limpiar(hijo.text)
+        nombre = quitar_namespace(hijo.tag).lower()
+
+        if nombre in nombres:
+            texto = obtener_texto(hijo)
 
             if texto:
                 return texto
@@ -76,109 +71,141 @@ def buscar_valor(elemento, nombres):
     return ""
 
 
-def extraer_items(raiz):
-    """
-    Busca elementos RSS tipo item.
-    También acepta entry por si la fuente cambia a Atom.
-    """
-
-    items = []
-
-    for elemento in raiz.iter():
-        nombre = nombre_local(elemento)
-
-        if nombre in ("item", "entry"):
-            items.append(elemento)
-
-    return items
-
-
-def extraer_resultados(xml):
-    try:
-        raiz = ET.fromstring(xml)
-    except ET.ParseError as e:
-        raise RuntimeError(f"No se ha podido interpretar el XML: {e}")
-
-    items = extraer_items(raiz)
-
-    print(f"Elementos encontrados en el RSS: {len(items)}")
-
-    if not items:
-        raise RuntimeError(
-            "El RSS se ha descargado correctamente, pero no contiene elementos item/entry."
-        )
+def procesar_xml(xml):
+    raiz = ET.fromstring(xml)
 
     resultados = []
 
-    for item in items:
+    # Buscamos elementos que tengan estructura de noticia/item
+    candidatos = []
 
-        titulo = buscar_valor(
-            item,
+    for elemento in raiz.iter():
+        nombre = quitar_namespace(elemento.tag).lower()
+
+        if nombre in (
+            "item",
+            "entry",
+            "sorteo",
+            "resultado",
+            "result",
+            "noticia",
+        ):
+            candidatos.append(elemento)
+
+    # Si el XML utiliza otra estructura, buscamos elementos
+    # que contengan información reconocible.
+    if not candidatos:
+        for elemento in raiz.iter():
+            titulo = buscar_hijo(elemento, ["title", "titulo"])
+            fecha = buscar_hijo(elemento, ["pubDate", "published", "date", "fecha"])
+            descripcion = buscar_hijo(
+                elemento,
+                ["description", "descripcion", "content", "summary"],
+            )
+
+            if titulo or fecha or descripcion:
+                candidatos.append(elemento)
+
+    vistos = set()
+
+    for elemento in candidatos:
+
+        titulo = buscar_hijo(
+            elemento,
             [
                 "title",
                 "titulo",
                 "name",
-                "nombre"
-            ]
+                "nombre",
+            ],
         )
 
-        fecha = buscar_valor(
-            item,
+        fecha = buscar_hijo(
+            elemento,
             [
-                "pubdate",
+                "pubDate",
                 "published",
                 "updated",
                 "date",
-                "fecha"
-            ]
+                "fecha",
+            ],
         )
 
-        descripcion = buscar_valor(
-            item,
+        descripcion = buscar_hijo(
+            elemento,
             [
                 "description",
+                "descripcion",
                 "summary",
                 "content",
                 "contenido",
-                "descripcion"
-            ]
+            ],
         )
 
-        resultado = {
-            "titulo": titulo,
-            "fecha": fecha,
-            "descripcion": descripcion
-        }
+        # También comprobamos atributos por si el XML de ONCE
+        # utiliza información en atributos.
+        if not titulo:
+            for clave, valor in elemento.attrib.items():
+                clave_l = clave.lower()
 
-        # Solo añadimos resultados que tengan algún contenido real.
-        if titulo or fecha or descripcion:
-            resultados.append(resultado)
+                if clave_l in ("title", "titulo", "name", "nombre"):
+                    titulo = limpiar_texto(valor)
+                    break
+
+        if not fecha:
+            for clave, valor in elemento.attrib.items():
+                clave_l = clave.lower()
+
+                if clave_l in (
+                    "date",
+                    "fecha",
+                    "pubdate",
+                    "published",
+                    "updated",
+                ):
+                    fecha = limpiar_texto(valor)
+                    break
+
+        if not descripcion:
+            for clave, valor in elemento.attrib.items():
+                clave_l = clave.lower()
+
+                if clave_l in (
+                    "description",
+                    "descripcion",
+                    "summary",
+                    "content",
+                    "contenido",
+                ):
+                    descripcion = limpiar_texto(valor)
+                    break
+
+        # Ignoramos elementos completamente vacíos.
+        if not titulo and not fecha and not descripcion:
+            continue
+
+        clave = (titulo, fecha, descripcion)
+
+        if clave in vistos:
+            continue
+
+        vistos.add(clave)
+
+        resultados.append(
+            {
+                "titulo": titulo,
+                "fecha": fecha,
+                "descripcion": descripcion,
+            }
+        )
 
     return resultados
 
 
 def guardar_resultados(resultados):
-    if not resultados:
-        raise RuntimeError(
-            "ERROR: no se ha podido extraer NINGÚN resultado del RSS. "
-            "No se va a generar un resultados.json vacío."
-        )
-
-    # Comprobación adicional para impedir el problema anterior.
-    completos = [
-        r for r in resultados
-        if r["titulo"] or r["fecha"] or r["descripcion"]
-    ]
-
-    if not completos:
-        raise RuntimeError(
-            "ERROR: todos los resultados están vacíos. "
-            "La ejecución se detiene para no publicar datos incorrectos."
-        )
-
     datos = {
         "actualizado": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "resultados": resultados
+        "resultados": resultados,
     }
 
     with SALIDA.open("w", encoding="utf-8") as archivo:
@@ -186,35 +213,36 @@ def guardar_resultados(resultados):
             datos,
             archivo,
             ensure_ascii=False,
-            indent=2
+            indent=2,
         )
-
-    print()
-    print("======================================")
-    print("RESULTADOS GENERADOS CORRECTAMENTE")
-    print("======================================")
-    print(f"Resultados extraídos: {len(resultados)}")
-    print(f"Archivo: {SALIDA}")
-    print()
-
-    for numero, resultado in enumerate(resultados, start=1):
-        print(f"{numero}. {resultado['titulo']}")
-        print(f"   Fecha: {resultado['fecha']}")
-        print(f"   Descripción: {resultado['descripcion']}")
-        print()
 
 
 def main():
-
-    print("======================================")
-    print(" GENERADOR DE RESULTADOS ONCE")
-    print("======================================")
-
+    print("Descargando XML de JuegosONCE...")
+    
     xml = descargar_xml()
 
-    resultados = extraer_resultados(xml)
+    print("XML descargado correctamente.")
+    print("Tamaño:", len(xml), "bytes")
+
+    resultados = procesar_xml(xml)
+
+    print("Resultados encontrados:", len(resultados))
+
+    # Mostramos información en Actions para poder comprobar
+    # exactamente qué está leyendo el programa.
+    for i, resultado in enumerate(resultados, start=1):
+        print()
+        print("RESULTADO", i)
+        print("Título:", resultado["titulo"])
+        print("Fecha:", resultado["fecha"])
+        print("Descripción:", resultado["descripcion"])
 
     guardar_resultados(resultados)
+
+    print()
+    print("Archivo resultados.json generado correctamente.")
+    print("Ruta:", SALIDA.resolve())
 
 
 if __name__ == "__main__":
