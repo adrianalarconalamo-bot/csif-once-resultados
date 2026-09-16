@@ -1,31 +1,74 @@
-{
-    "actualizado": "16/09/2026 21:15",
-    "resultados": [
-        {
-            "tipo": "Cupón Diario",
-            "numero": "12345",
-            "serie": "012"
-        },
-        {
-            "tipo": "Triplex de la ONCE Sorteo 1",
-            "numero": "123"
-        },
-        {
-            "tipo": "Triplex de la ONCE Sorteo 2",
-            "numero": "456"
-        },
-        {
-            "tipo": "Mi Día",
-            "numero": "12/10/1980 - 05"
-        },
-        {
-            "tipo": "Dupla de la ONCE Sorteo 1",
-            "numero": "12"
-        },
-        {
-            "tipo": "Super 11 Sorteo 1",
-            "numero": "01, 05, 12, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 81, 85, 90",
-            "importebote": "0"
-        }
-    ]
-}
+[
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    },
+    {
+        "titulo": "",
+        "descripcion": "",
+        "enlace": "",
+        "fecha": ""
+    }
+]
