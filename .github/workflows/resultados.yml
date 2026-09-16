@@ -1,42 +1,91 @@
 name: Actualizar Resultados ONCE
 
 on:
-  schedule:
-    - cron: '30 21 * * *'
   workflow_dispatch:
 
+  schedule:
+    - cron: "30 19 * * *"
+
 jobs:
+
   resultados:
+
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
+
     steps:
-      - name: Checkout repository
+
+      - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.12"
 
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 lxml
 
-      - name: Generar resultados
-        run: python generar_resultados.py
+      - name: Generar resultados ONCE
+        run: |
+          python generar_resultados.py
 
-      - name: Generar mensaje y enviar a Telegram
+      - name: Comprobar resultados
+        run: |
+          python - <<'PY'
+          import json
+
+          with open("resultados.json", "r", encoding="utf-8") as f:
+              datos = json.load(f)
+
+          resultados = datos.get("resultados", [])
+
+          print("Resultados encontrados:", len(resultados))
+
+          if not resultados:
+              raise SystemExit(
+                  "ERROR: resultados.json está vacío."
+              )
+
+          for resultado in resultados[:20]:
+              print(
+                  resultado.get("tipo"),
+                  "|",
+                  resultado.get("fecha"),
+                  "|",
+                  resultado.get("numero")
+              )
+          PY
+
+      - name: Generar mensaje CSIF INFORMA y enviar Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python generar_whatsapp.py
-
-      - name: Guardar y subir cambios
         run: |
+          python generar_whatsapp.py
+
+      - name: Guardar resultados
+        run: |
+
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add resultados.json whatsapp.txt
-          git diff --cached --quiet || git commit -m "Actualizar resultados"
-          git push
+
+          if git diff --cached --quiet; then
+
+            echo "No hay cambios que guardar."
+
+          else
+
+            git commit -m "Actualizar resultados ONCE"
+
+            git push
+
+          fi
