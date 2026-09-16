@@ -4,9 +4,11 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from html import unescape
 
 URL = "https://www.juegosonce.es/rss/sorteos2.xml"
+
+ARCHIVO_RESULTADOS = Path("resultados.json")
+ARCHIVO_XML = Path("once_resultados.xml")
 
 
 def descargar_xml():
@@ -14,140 +16,125 @@ def descargar_xml():
         URL,
         headers={
             "User-Agent": "Mozilla/5.0",
-            "Accept": "application/rss+xml, application/xml, text/xml, */*"
+            "Accept": "application/xml,text/xml,*/*"
         }
     )
 
     with urllib.request.urlopen(req, timeout=30) as respuesta:
-        return respuesta.read()
+        datos = respuesta.read()
+
+    return datos
 
 
-def limpiar_html(texto):
-    if not texto:
+def limpiar_texto(texto):
+    if texto is None:
         return ""
 
-    texto = unescape(texto)
-
-    texto = re.sub(r"<br\s*/?>", "\n", texto, flags=re.IGNORECASE)
-    texto = re.sub(r"</p\s*>", "\n", texto, flags=re.IGNORECASE)
-    texto = re.sub(r"<[^>]+>", "", texto)
-
-    texto = re.sub(r"[ \t]+", " ", texto)
-    texto = re.sub(r"\n\s*\n+", "\n", texto)
-
+    texto = re.sub(r"\s+", " ", texto)
     return texto.strip()
 
 
-def obtener_texto(elemento, nombre):
-    hijo = elemento.find(nombre)
-
-    if hijo is not None and hijo.text:
-        return hijo.text.strip()
-
-    for subelemento in elemento.iter():
-        etiqueta = subelemento.tag.split("}")[-1]
-
-        if etiqueta == nombre and subelemento.text:
-            return subelemento.text.strip()
-
-    return ""
-
-
-def main():
-
-    print("Descargando RSS de ONCE...")
-
-    datos = descargar_xml()
-
-    print(f"XML descargado: {len(datos)} bytes")
-
-    raiz = ET.fromstring(datos)
-
+def extraer_elementos(raiz):
     resultados = []
 
     for elemento in raiz.iter():
+        texto = limpiar_texto(elemento.text)
 
-        etiqueta = elemento.tag.split("}")[-1]
-
-        if etiqueta not in ("item", "entry"):
+        if not texto:
             continue
 
-        titulo = obtener_texto(elemento, "title")
-        descripcion = obtener_texto(elemento, "description")
+        # Guardamos únicamente elementos que tengan información
+        # relacionada con sorteos/resultados.
+        padre = elemento.tag.lower()
 
-        if not descripcion:
-            descripcion = obtener_texto(elemento, "summary")
+        resultados.append({
+            "elemento": padre,
+            "texto": texto
+        })
 
-        fecha = obtener_texto(elemento, "pubDate")
+    return resultados
 
-        if not fecha:
-            fecha = obtener_texto(elemento, "date")
 
-        titulo = limpiar_html(titulo)
-        descripcion = limpiar_html(descripcion)
-        fecha = limpiar_html(fecha)
+def procesar_xml(datos):
+    try:
+        raiz = ET.fromstring(datos)
+    except ET.ParseError as error:
+        print("ERROR AL INTERPRETAR EL XML:")
+        print(error)
+        return []
 
-        if titulo or descripcion:
+    resultados = extraer_elementos(raiz)
 
-            resultados.append({
-                "titulo": titulo,
-                "fecha": fecha,
-                "descripcion": descripcion
-            })
+    print("Elementos encontrados:", len(resultados))
 
+    for resultado in resultados[:30]:
+        print(
+            resultado["elemento"],
+            "=>",
+            resultado["texto"]
+        )
+
+    return resultados
+
+
+def guardar_resultados(resultados):
     ahora = datetime.now().strftime("%d/%m/%Y %H:%M")
 
-    datos_salida = {
+    datos = {
         "actualizado": ahora,
         "resultados": resultados
     }
 
-    Path("resultados.json").write_text(
-        json.dumps(
-            datos_salida,
+    with open(
+        ARCHIVO_RESULTADOS,
+        "w",
+        encoding="utf-8"
+    ) as archivo:
+        json.dump(
+            datos,
+            archivo,
             ensure_ascii=False,
             indent=2
-        ),
-        encoding="utf-8"
-    )
+        )
 
-    Path("salida").mkdir(exist_ok=True)
 
-    texto = []
+def main():
+    print("======================================")
+    print(" GENERADOR DE RESULTADOS ONCE")
+    print("======================================")
 
-    texto.append("🍀 RESULTADOS ONCE")
-    texto.append(datetime.now().strftime("%d/%m/%Y"))
-    texto.append("")
+    print("Descargando XML:")
+    print(URL)
 
-    for resultado in resultados:
+    try:
+        datos_xml = descargar_xml()
 
-        if resultado["titulo"]:
-            texto.append(resultado["titulo"])
+        print("XML descargado correctamente.")
+        print("Tamaño:", len(datos_xml), "bytes")
 
-        if resultado["fecha"]:
-            texto.append(resultado["fecha"])
+        # Guardamos una copia para poder comprobar
+        # exactamente qué está devolviendo ONCE.
+        with open(ARCHIVO_XML, "wb") as archivo:
+            archivo.write(datos_xml)
 
-        if resultado["descripcion"]:
-            texto.append(resultado["descripcion"])
+        print("XML guardado en:", ARCHIVO_XML)
 
-        texto.append("")
+    except Exception as error:
+        print("ERROR DESCARGANDO EL XML:")
+        print(error)
 
-    Path("salida/mensaje.txt").write_text(
-        "\n".join(texto),
-        encoding="utf-8"
-    )
+        guardar_resultados([])
 
-    print("")
-    print("================================")
-    print("RESULTADOS OBTENIDOS:", len(resultados))
-    print("================================")
-    print("")
+        raise
 
-    for resultado in resultados:
-        print("TÍTULO:", resultado["titulo"])
-        print("FECHA:", resultado["fecha"])
-        print("DESCRIPCIÓN:", resultado["descripcion"])
-        print("--------------------------------")
+    resultados = procesar_xml(datos_xml)
+
+    guardar_resultados(resultados)
+
+    print("--------------------------------------")
+    print("RESULTADOS EXTRAÍDOS:", len(resultados))
+    print("Archivo generado:", ARCHIVO_RESULTADOS)
+    print("======================================")
 
 
 if __name__ == "__main__":
