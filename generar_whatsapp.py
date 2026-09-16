@@ -23,14 +23,13 @@ def obtener_numero_sorteo(texto):
 
 
 def formatear_super11(numero_str):
-    """Agrupa los números del Super 11 de 5 en 5"""
+    """Agrupa los números del Super 11 de 10 en 10 separados por ' · '"""
     nums = re.findall(r'\d+', str(numero_str))
     if not nums: return numero_str
-    
+
     lineas = []
-    for i in range(0, len(nums), 5):
-        # Une 5 números separados por espacio y rellenando con ceros a la izquierda si hiciera falta
-        bloque = " ".join(f"{int(n):02d}" for n in nums[i:i+5])
+    for i in range(0, len(nums), 10):
+        bloque = " · ".join(f"{int(n):02d}" for n in nums[i:i+10])
         lineas.append(bloque)
     return "\n".join(lineas)
 
@@ -67,119 +66,135 @@ def generar_whatsapp():
     resultados = datos.get("resultados", [])
     if not resultados: return
 
-    # Variables para organizar los juegos
-    cupon_principal = None
-    eurojackpot = None
-    mi_dia = None
-    sorteos_diarios = {1: {}, 2: {}, 3: {}, 4: {}, 5: {}}
+    # Procesar fecha y hora de actualización
+    actualizado_str = datos.get("actualizado", "")
+    try:
+        dt = datetime.strptime(actualizado_str, "%d/%m/%Y %H:%M")
+        dias_minus = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+        meses_val = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+        
+        fecha_larga = f"{dias_minus[dt.weekday()]}, {dt.day} de {meses_val[dt.month - 1]} de {dt.year}"
+        
+        dias_cap = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        fecha_corta = f"{dias_cap[dt.weekday()]}, {dt.day:02d}/{dt.month:02d}/{dt.year}"
+        
+        hora_act = dt.strftime("%H:%M")
+    except:
+        fecha_larga = actualizado_str
+        fecha_corta = actualizado_str
+        hora_act = "21:41"
 
-    # Clasificar resultados
+    # Clasificar resultados por bloques
+    cupon_principal = None
+    mi_dia = None
+    triplex_dict = {}
+    dupla_dict = {}
+    super11_dict = {}
+
     for r in resultados:
         tipo = limpiar_texto(r.get("tipo", "")).upper()
-        num_sorteo = obtener_numero_sorteo(tipo)
+        num_sorteo = obtener_numero_sorteo(tipo) or 1
 
         if "CUPÓN" in tipo or "CUPONAZO" in tipo or "SUELDAZO" in tipo:
             cupon_principal = r
-        elif "EUROJACKPOT" in tipo or "EURO JACKPOT" in tipo:
-            eurojackpot = r
         elif "MI DÍA" in tipo or "MI DIA" in tipo:
             mi_dia = r
-        else:
-            ns = num_sorteo if num_sorteo else 1
-            if "TRIPLEX" in tipo:
-                sorteos_diarios[ns]["triplex"] = r
-            elif "SÚPER 11" in tipo or "SUPER 11" in tipo:
-                sorteos_diarios[ns]["super11"] = r
-            elif "DUPLA" in tipo:
-                sorteos_diarios[ns]["dupla"] = r
+        elif "TRIPLEX" in tipo:
+            triplex_dict[num_sorteo] = r
+        elif "SÚPER 11" in tipo or "SUPER 11" in tipo:
+            super11_dict[num_sorteo] = r
+        elif "DUPLA" in tipo:
+            dupla_dict[num_sorteo] = r
 
     # COMENZAR A MAQUETAR EL MENSAJE
     lineas = []
-    lineas.append("📢 *CSIF INFORMA*")
-    lineas.append("El sorteo de hoy")
-    
-    # Extraer fecha
-    try:
-        dt = datetime.strptime(datos.get("actualizado", ""), "%d/%m/%Y %H:%M")
-        dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-        lineas.append(f"*{dias[dt.weekday()]}*")
-        lineas.append(f"*{dt.day:02d}  {dt.month:02d}  {dt.year}*")
-    except:
-        lineas.append(f"*{datos.get('actualizado', '')}*")
-    
+    lineas.append("📢 CSIF INFORMA")
     lineas.append("")
+    lineas.append("🎟️ RESULTADOS ONCE")
+    lineas.append(f"📅 {fecha_larga}")
+    lineas.append(f"🕒 Actualizado: {hora_act}")
+    
+    separador = "━━━━━━━━━━━━━━━━━━"
 
     # 1. Cupón Principal
     if cupon_principal:
-        lineas.append("🔘 *Cupón Diario*") # O Cuponazo/Sueldazo según el día
+        lineas.append("")
+        lineas.append(separador)
+        lineas.append("")
+        nombre_cupon = limpiar_texto(cupon_principal.get("tipo", "Cupón Diario"))
+        lineas.append(f"🎟️ {nombre_cupon}")
+        lineas.append(fecha_corta)
         numero = cupon_principal.get('numero', '')
         serie = cupon_principal.get('serie', '')
+        lineas.append(str(numero))
         if serie:
-            lineas.append(f"*{numero}* serie *{serie}*")
-        else:
-            lineas.append(f"*{numero}*")
-        lineas.append("")
+            lineas.append(f"Serie: {serie}")
 
-    # 2. Eurojackpot
-    if eurojackpot:
-        lineas.append("💸 *Euro Jackpot* 💸")
-        numero = eurojackpot.get('numero', '')
-        bote = eurojackpot.get('importebote', eurojackpot.get('bote', ''))
-        
-        if numero: 
-            lineas.append(f"*{numero}*")
-            
-        if bote and bote != "0":
-            # Formatear el bote si viene en número largo
-            try:
-                millones = int(float(bote)) // 1000000
-                if millones > 0:
-                    lineas.append("*BOTE*")
-                    lineas.append(f"*{millones}* Millones €")
-                else:
-                    lineas.append(f"*BOTE:* {bote} €")
-            except:
-                lineas.append(f"*BOTE:* {bote} €")
-        lineas.append("")
-
-    # 3. Sorteos (1 al 5)
+    # 2. Triplex de la ONCE (1 al 5)
     for i in range(1, 6):
-        s = sorteos_diarios[i]
-        # El Sorteo 5 suele llevar "Mi Día"
-        if s or (i == 5 and mi_dia):
-            lineas.append(f"▫ *Sorteo {i}*")
-            
-            if "dupla" in s:
-                lineas.append("Dupla")
-                lineas.append(f"*{s['dupla'].get('numero','')}*")
-            
-            if "triplex" in s:
-                lineas.append("Tríplex")
-                lineas.append(f"*{s['triplex'].get('numero','')}*")
-                
-            if "super11" in s:
-                lineas.append("Súper 11")
-                lineas.append(formatear_super11(s['super11'].get('numero','')))
-                
-            if i == 5 and mi_dia:
-                lineas.append("Mi Día 🍀")
-                lineas.append(f"*{mi_dia.get('numero','')}*")
-                
+        if i in triplex_dict:
             lineas.append("")
+            lineas.append(separador)
+            lineas.append("")
+            lineas.append("🔵 Triplex de la ONCE")
+            lineas.append(f"{fecha_corta}, Sorteo {i}")
+            lineas.append(str(triplex_dict[i].get('numero', '')))
+
+    # 3. Mi Día
+    if mi_dia:
+        lineas.append("")
+        lineas.append(separador)
+        lineas.append("")
+        lineas.append("🎟️ Mi Día")
+        lineas.append(fecha_corta)
+        lineas.append(str(mi_dia.get('numero', '')))
+
+    # 4. Dupla de la ONCE (1 al 5)
+    for i in range(1, 6):
+        if i in dupla_dict:
+            lineas.append("")
+            lineas.append(separador)
+            lineas.append("")
+            lineas.append("🟢 Dupla de la ONCE")
+            lineas.append(f"{fecha_corta}, Sorteo {i}")
+            lineas.append(str(dupla_dict[i].get('numero', '')))
+
+    # 5. Super 11 (1 al 5)
+    for i in range(1, 6):
+        if i in super11_dict:
+            lineas.append("")
+            lineas.append(separador)
+            lineas.append("")
+            lineas.append("🔴 Super 11")
+            lineas.append(f"{fecha_corta}, Sorteo {i}")
+            num_s11 = super11_dict[i].get('numero', '')
+            lineas.append(formatear_super11(num_s11))
+            
+            bote = super11_dict[i].get('importebote', super11_dict[i].get('bote', ''))
+            if bote and bote != "0":
+                try:
+                    bote_int = int(float(bote))
+                    bote_fmt = f"{bote_int:,.0f}".replace(",", ".")
+                    lineas.append(f"💰 Bote: {bote_fmt} €")
+                except:
+                    lineas.append(f"💰 Bote: {bote} €")
 
     # PIE DE MENSAJE
-    lineas.append("━━━━━━━━━━━━━━━")
-    lineas.append("🟢 *CSIF ONCE*")
-    lineas.append("ESTAMOS POR TI")
-    lineas.append(f"TEL: *{TELEFONO}*")
-    lineas.append("*Buenas Noches*")
+    lineas.append("")
+    lineas.append(separador)
+    lineas.append("")
+    lineas.append("🌙 Buenas noches.")
+    lineas.append("")
+    lineas.append(f"📞 {TELEFONO}")
+    lineas.append("")
+    lineas.append("🤝 CSIF, todo por todos.")
 
     # Guardar y enviar
     texto_final = "\n".join(lineas).strip() + "\n"
-    
+
     with open(OUTPUT_FILE, "w", encoding="utf-8") as archivo:
         archivo.write(texto_final)
-        
+
     enviar_telegram(texto_final)
 
 
