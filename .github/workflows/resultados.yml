@@ -1,30 +1,33 @@
-name: Resultados ONCE
+name: Resultados
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 21 * * *'
-      timezone: 'Europe/Madrid'
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
 
 jobs:
-  generar-resultados:
+  resultados:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar proyecto
+      - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      - name: Preparar Python
+      - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.x"
 
-      - name: Generar resultados
+      - name: Ejecutar generador
         run: python generar_resultados.py
 
-      - name: Guardar mensaje
-        uses: actions/upload-artifact@v4
-        with:
-          name: resultados-once
-          path: salida/mensaje.txt
-          retention-days: 7
+      - name: Guardar resultados.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add resultados.json
+          git diff --cached --quiet || git commit -m "Actualizar resultados"
+          git push
