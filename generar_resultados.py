@@ -10,57 +10,75 @@ URL = "https://www.juegosonce.es/rss/sorteos2.xml"
 def descargar_xml():
     req = urllib.request.Request(
         URL,
-        headers={"User-Agent": "Mozilla/5.0"}
+        headers={
+            "User-Agent": "Mozilla/5.0"
+        }
     )
 
     with urllib.request.urlopen(req, timeout=30) as respuesta:
         return respuesta.read()
 
 
+def limpiar_texto(texto):
+    if texto is None:
+        return ""
+    return " ".join(texto.split())
+
+
 def main():
+    print("Descargando RSS de ONCE...")
+
     datos = descargar_xml()
+
+    print("RSS descargado correctamente.")
+
     raiz = ET.fromstring(datos)
 
     resultados = []
 
     for item in raiz.iter():
-        if item.tag.lower().endswith("item"):
-            titulo = ""
-            fecha = ""
-            descripcion = ""
+        tag = item.tag.split("}")[-1]
 
-            for elemento in item:
-                nombre = elemento.tag.lower()
+        if tag != "item":
+            continue
 
-                if nombre.endswith("title"):
-                    titulo = elemento.text or ""
+        titulo = ""
+        descripcion = ""
+        fecha = ""
 
-                elif nombre.endswith("pubdate"):
-                    fecha = elemento.text or ""
+        for elemento in list(item):
+            nombre = elemento.tag.split("}")[-1]
 
-                elif nombre.endswith("description"):
-                    descripcion = elemento.text or ""
+            if nombre == "title":
+                titulo = limpiar_texto(elemento.text)
 
+            elif nombre == "description":
+                descripcion = limpiar_texto(elemento.text)
+
+            elif nombre in ("pubDate", "date"):
+                fecha = limpiar_texto(elemento.text)
+
+        if titulo or descripcion or fecha:
             resultados.append({
-                "titulo": titulo.strip(),
-                "fecha": fecha.strip(),
-                "descripcion": descripcion.strip()
+                "titulo": titulo,
+                "fecha": fecha,
+                "descripcion": descripcion
             })
 
-    salida = {
-        "actualizado": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "resultados": resultados
-    }
+    print(f"Resultados encontrados: {len(resultados)}")
 
     archivo = Path("resultados.json")
 
     archivo.write_text(
-        json.dumps(salida, ensure_ascii=False, indent=2),
+        json.dumps(
+            resultados,
+            ensure_ascii=False,
+            indent=2
+        ),
         encoding="utf-8"
     )
 
-    print(f"OK: {len(resultados)} resultados guardados.")
-    print(f"Archivo generado: {archivo}")
+    print("resultados.json creado correctamente.")
 
 
 if __name__ == "__main__":
