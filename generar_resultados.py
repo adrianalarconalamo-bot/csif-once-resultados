@@ -338,6 +338,39 @@ def convertir_item(campos):
     return resultado
 
 
+def extraer_fecha_resultado(texto):
+
+    if not texto:
+        return None
+
+    texto = limpiar_texto(texto)
+
+    # Formato habitual del RSS:
+    # Miércoles, 16/09/2026
+    encontrado = re.search(
+        r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b",
+        texto
+    )
+
+    if encontrado:
+
+        try:
+            dia = int(encontrado.group(1))
+            mes = int(encontrado.group(2))
+            año = int(encontrado.group(3))
+
+            return datetime(
+                año,
+                mes,
+                dia
+            ).date()
+
+        except ValueError:
+            return None
+
+    return None
+
+
 def obtener_resultados():
 
     contenido = descargar_rss()
@@ -375,65 +408,80 @@ def obtener_resultados():
             )
 
     print(
-        f"RESULTADOS OBTENIDOS ANTES DEL FILTRO: "
-        f"{len(resultados)}"
+        f"RESULTADOS OBTENIDOS: {len(resultados)}"
     )
 
+    if not resultados:
+        raise RuntimeError(
+            "No se ha obtenido ningún resultado del RSS."
+        )
+
     # ==========================================================
-    # FILTRO: SOLO RESULTADOS DEL DÍA ACTUAL EN ESPAÑA
+    # DETERMINAR LA FECHA MÁS RECIENTE DISPONIBLE EN EL RSS
     # ==========================================================
 
-    ahora = datetime.now(
-        ZoneInfo("Europe/Madrid")
-    )
-
-    fecha_hoy = ahora.strftime("%d/%m/%Y")
-
-    dias = [
-        "lunes",
-        "martes",
-        "miércoles",
-        "jueves",
-        "viernes",
-        "sábado",
-        "domingo",
-    ]
-
-    dia_hoy = dias[ahora.weekday()]
-
-    resultados_hoy = []
+    fechas = []
 
     for resultado in resultados:
 
-        fecha = limpiar_texto(
+        fecha = extraer_fecha_resultado(
             resultado.get("fecha", "")
-        ).lower()
-
-        # Comprobamos tanto la fecha numérica como
-        # el nombre del día.
-        coincide_fecha = fecha_hoy in fecha
-        coincide_dia = dia_hoy in fecha
-
-        if coincide_fecha or coincide_dia:
-            resultados_hoy.append(resultado)
-
-    print(
-        f"FECHA ACTUAL EN ESPAÑA: {fecha_hoy}"
-    )
-
-    print(
-        f"RESULTADOS DEL DÍA: {len(resultados_hoy)}"
-    )
-
-    for resultado in resultados_hoy:
-
-        print(
-            f"  ✓ {resultado['tipo']} "
-            f"| {resultado['fecha']} "
-            f"| {resultado['numero']}"
         )
 
-    return resultados_hoy
+        if fecha:
+            fechas.append(fecha)
+
+    if not fechas:
+        raise RuntimeError(
+            "No se ha podido determinar la fecha "
+            "de ningún resultado del RSS."
+        )
+
+    fecha_objetivo = max(fechas)
+
+    print(
+        "FECHA MÁS RECIENTE DISPONIBLE EN EL RSS: "
+        f"{fecha_objetivo.strftime('%d/%m/%Y')}"
+    )
+
+    # ==========================================================
+    # FILTRAR SOLO LOS SORTEOS DE ESA FECHA
+    # ==========================================================
+
+    resultados_filtrados = []
+
+    for resultado in resultados:
+
+        fecha_resultado = extraer_fecha_resultado(
+            resultado.get("fecha", "")
+        )
+
+        if fecha_resultado == fecha_objetivo:
+
+            resultados_filtrados.append(resultado)
+
+            print(
+                f"  ✓ INCLUIDO: "
+                f"{resultado['tipo']} | "
+                f"{resultado['fecha']} | "
+                f"{resultado['numero']}"
+            )
+
+        else:
+
+            print(
+                f"  ✗ OMITIDO: "
+                f"{resultado['tipo']} | "
+                f"{resultado['fecha']} | "
+                f"{resultado['numero']}"
+            )
+
+    print(
+        f"RESULTADOS FINALES: "
+        f"{len(resultados_filtrados)}"
+    )
+
+    return resultados_filtrados
 
 
 def guardar_resultados(resultados):
@@ -441,8 +489,7 @@ def guardar_resultados(resultados):
     if not resultados:
 
         raise RuntimeError(
-            "El RSS de ONCE contiene resultados, "
-            "pero ninguno corresponde al día actual."
+            "No hay resultados para guardar."
         )
 
     ahora = datetime.now(
