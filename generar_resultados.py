@@ -99,8 +99,6 @@ def leer_item(item):
         if not texto:
             continue
 
-        # Si el mismo campo aparece varias veces,
-        # conservamos el primero no vacío.
         if tag not in campos:
             campos[tag] = texto
 
@@ -121,7 +119,6 @@ def buscar_campo(campos, nombres):
 
 def detectar_tipo(campos):
 
-    # Primero buscamos nombres habituales del RSS.
     tipo = buscar_campo(
         campos,
         [
@@ -141,8 +138,6 @@ def detectar_tipo(campos):
     if tipo:
         return tipo
 
-    # Si el RSS no tiene título, buscamos palabras conocidas
-    # dentro de todos los campos.
     texto = " ".join(campos.values()).lower()
 
     patrones = [
@@ -171,7 +166,7 @@ def detectar_tipo(campos):
 
 def buscar_fecha(campos):
 
-    fecha = buscar_campo(
+    return buscar_campo(
         campos,
         [
             "pubdate",
@@ -182,12 +177,9 @@ def buscar_fecha(campos):
         ]
     )
 
-    return fecha
-
 
 def buscar_numero(campos):
 
-    # Campos estructurados que podría utilizar el RSS.
     numero = buscar_campo(
         campos,
         [
@@ -209,13 +201,9 @@ def buscar_numero(campos):
     texto = " ".join(campos.values())
 
     patrones = [
-
         r"(?:número|numero)\s*[:=]\s*([0-9][0-9\s,./-]*)",
-
         r"(?:resultado)\s*[:=]\s*([0-9][0-9\s,./-]*)",
-
         r"(?:number)\s*[:=]\s*([0-9][0-9\s,./-]*)",
-
     ]
 
     for patron in patrones:
@@ -227,7 +215,6 @@ def buscar_numero(campos):
         )
 
         if encontrado:
-
             return encontrado.group(1).strip()
 
     return ""
@@ -322,7 +309,6 @@ def convertir_item(campos):
         "importebote": bote,
     }
 
-    # Guardamos también información adicional si existe.
     descripcion = buscar_campo(
         campos,
         [
@@ -377,20 +363,77 @@ def obtener_resultados():
 
             print(
                 f"  OK: {resultado['tipo']} "
+                f"| {resultado['fecha']} "
                 f"| {resultado['numero']}"
             )
 
         else:
 
             print(
-                "  AVISO: no se pudo identificar el tipo del sorteo"
+                "  AVISO: no se pudo identificar "
+                "el tipo del sorteo"
             )
 
     print(
-        f"RESULTADOS OBTENIDOS: {len(resultados)}"
+        f"RESULTADOS OBTENIDOS ANTES DEL FILTRO: "
+        f"{len(resultados)}"
     )
 
-    return resultados
+    # ==========================================================
+    # FILTRO: SOLO RESULTADOS DEL DÍA ACTUAL EN ESPAÑA
+    # ==========================================================
+
+    ahora = datetime.now(
+        ZoneInfo("Europe/Madrid")
+    )
+
+    fecha_hoy = ahora.strftime("%d/%m/%Y")
+
+    dias = [
+        "lunes",
+        "martes",
+        "miércoles",
+        "jueves",
+        "viernes",
+        "sábado",
+        "domingo",
+    ]
+
+    dia_hoy = dias[ahora.weekday()]
+
+    resultados_hoy = []
+
+    for resultado in resultados:
+
+        fecha = limpiar_texto(
+            resultado.get("fecha", "")
+        ).lower()
+
+        # Comprobamos tanto la fecha numérica como
+        # el nombre del día.
+        coincide_fecha = fecha_hoy in fecha
+        coincide_dia = dia_hoy in fecha
+
+        if coincide_fecha or coincide_dia:
+            resultados_hoy.append(resultado)
+
+    print(
+        f"FECHA ACTUAL EN ESPAÑA: {fecha_hoy}"
+    )
+
+    print(
+        f"RESULTADOS DEL DÍA: {len(resultados_hoy)}"
+    )
+
+    for resultado in resultados_hoy:
+
+        print(
+            f"  ✓ {resultado['tipo']} "
+            f"| {resultado['fecha']} "
+            f"| {resultado['numero']}"
+        )
+
+    return resultados_hoy
 
 
 def guardar_resultados(resultados):
@@ -398,8 +441,8 @@ def guardar_resultados(resultados):
     if not resultados:
 
         raise RuntimeError(
-            "El RSS de ONCE contiene items, "
-            "pero no se ha podido identificar ningún resultado."
+            "El RSS de ONCE contiene resultados, "
+            "pero ninguno corresponde al día actual."
         )
 
     ahora = datetime.now(
