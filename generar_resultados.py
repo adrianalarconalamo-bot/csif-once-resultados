@@ -1,10 +1,10 @@
 import urllib.request
 import xml.etree.ElementTree as ET
 import json
-import html
 import re
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
+from html import unescape
 
 URL = "https://www.juegosonce.es/rss/sorteos2.xml"
 
@@ -14,7 +14,7 @@ def descargar_xml():
         URL,
         headers={
             "User-Agent": "Mozilla/5.0",
-            "Accept": "application/rss+xml, application/xml, text/xml"
+            "Accept": "application/rss+xml, application/xml, text/xml, */*"
         }
     )
 
@@ -22,117 +22,105 @@ def descargar_xml():
         return respuesta.read()
 
 
-def limpiar_texto(texto):
+def limpiar_html(texto):
     if not texto:
         return ""
 
-    texto = html.unescape(texto)
+    texto = unescape(texto)
 
-    # Eliminar etiquetas HTML
-    texto = re.sub(r"<[^>]+>", " ", texto)
+    texto = re.sub(r"<br\s*/?>", "\n", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"</p\s*>", "\n", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"<[^>]+>", "", texto)
 
-    # Limpiar espacios
-    texto = re.sub(r"\s+", " ", texto)
+    texto = re.sub(r"[ \t]+", " ", texto)
+    texto = re.sub(r"\n\s*\n+", "\n", texto)
 
     return texto.strip()
 
 
 def obtener_texto(elemento, nombre):
-    encontrado = elemento.find(nombre)
+    hijo = elemento.find(nombre)
 
-    if encontrado is not None and encontrado.text:
-        return limpiar_texto(encontrado.text)
+    if hijo is not None and hijo.text:
+        return hijo.text.strip()
 
-    # Buscar también por namespace
-    for hijo in elemento:
-        if hijo.tag.endswith("}" + nombre):
-            if hijo.text:
-                return limpiar_texto(hijo.text)
+    for subelemento in elemento.iter():
+        etiqueta = subelemento.tag.split("}")[-1]
+
+        if etiqueta == nombre and subelemento.text:
+            return subelemento.text.strip()
 
     return ""
 
 
 def main():
+
+    print("Descargando RSS de ONCE...")
+
     datos = descargar_xml()
+
+    print(f"XML descargado: {len(datos)} bytes")
 
     raiz = ET.fromstring(datos)
 
     resultados = []
 
-    # Buscar todos los elementos que puedan ser entradas RSS
     for elemento in raiz.iter():
+
+        etiqueta = elemento.tag.split("}")[-1]
+
+        if etiqueta not in ("item", "entry"):
+            continue
 
         titulo = obtener_texto(elemento, "title")
         descripcion = obtener_texto(elemento, "description")
+
+        if not descripcion:
+            descripcion = obtener_texto(elemento, "summary")
+
         fecha = obtener_texto(elemento, "pubDate")
 
-        # Solo guardar elementos que realmente tengan información
-        if titulo or descripcion or fecha:
+        if not fecha:
+            fecha = obtener_texto(elemento, "date")
 
-            resultado = {
+        titulo = limpiar_html(titulo)
+        descripcion = limpiar_html(descripcion)
+        fecha = limpiar_html(fecha)
+
+        if titulo or descripcion:
+
+            resultados.append({
                 "titulo": titulo,
                 "fecha": fecha,
                 "descripcion": descripcion
-            }
+            })
 
-            # Evitar duplicados
-            if resultado not in resultados:
-                resultados.append(resultado)
+    ahora = datetime.now().strftime("%d/%m/%Y %H:%M")
 
-    # Si el RSS utiliza otro formato, buscar enlaces/items
-    if not resultados:
-        for elemento in raiz.iter():
-
-            datos_elemento = {}
-
-            for hijo in elemento:
-                nombre = hijo.tag.split("}")[-1]
-
-                if nombre in ("title", "description", "pubDate", "date"):
-                    datos_elemento[nombre] = limpiar_texto(hijo.text or "")
-
-            if any(datos_elemento.values()):
-
-                resultado = {
-                    "titulo": datos_elemento.get("title", ""),
-                    "fecha": datos_elemento.get(
-                        "pubDate",
-                        datos_elemento.get("date", "")
-                    ),
-                    "descripcion": datos_elemento.get("description", "")
-                }
-
-                if resultado not in resultados:
-                    resultados.append(resultado)
-
-    # Crear resultados.json
-    salida = {
-        "actualizado": datetime.now(
-            timezone.utc
-        ).astimezone().strftime("%d/%m/%Y %H:%M"),
+    datos_salida = {
+        "actualizado": ahora,
         "resultados": resultados
     }
 
     Path("resultados.json").write_text(
         json.dumps(
-            salida,
+            datos_salida,
             ensure_ascii=False,
             indent=2
         ),
         encoding="utf-8"
     )
 
-    # Crear también mensaje.txt
     Path("salida").mkdir(exist_ok=True)
 
     texto = []
+
     texto.append("🍀 RESULTADOS ONCE")
-    texto.append(
-        datetime.now().strftime("%d/%m/%Y %H:%M")
-    )
+    texto.append(datetime.now().strftime("%d/%m/%Y"))
     texto.append("")
 
     for resultado in resultados:
+
         if resultado["titulo"]:
             texto.append(resultado["titulo"])
 
@@ -149,20 +137,17 @@ def main():
         encoding="utf-8"
     )
 
-    print("====================================")
-    print("RESULTADOS ONCE")
-    print("====================================")
-    print(f"Elementos encontrados: {len(resultados)}")
-    print()
+    print("")
+    print("================================")
+    print("RESULTADOS OBTENIDOS:", len(resultados))
+    print("================================")
+    print("")
 
     for resultado in resultados:
-        print("Título:", resultado["titulo"])
-        print("Fecha:", resultado["fecha"])
-        print("Descripción:", resultado["descripcion"])
-        print("------------------------------------")
-
-    print()
-    print("Archivo resultados.json creado correctamente.")
+        print("TÍTULO:", resultado["titulo"])
+        print("FECHA:", resultado["fecha"])
+        print("DESCRIPCIÓN:", resultado["descripcion"])
+        print("--------------------------------")
 
 
 if __name__ == "__main__":
