@@ -1,5 +1,7 @@
 import json
 import html
+import os
+import requests
 from pathlib import Path
 from datetime import datetime
 
@@ -108,6 +110,35 @@ def formatear_resultado(resultado):
     return "\n".join(lineas)
 
 
+def enviar_telegram(texto_mensaje):
+    """
+    Lee los secretos de GitHub Actions y realiza el envío del mensaje a Telegram.
+    """
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    if not bot_token or not chat_id:
+        print("⚠️ AVISO: No se detectaron TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID. Se omitirá el envío a Telegram.")
+        return
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": texto_mensaje,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True
+    }
+
+    try:
+        response = requests.post(url, json=payload, timeout=15)
+        if response.status_code == 200:
+            print("✅ Mensaje enviado a Telegram correctamente.")
+        else:
+            print(f"❌ Error enviando a Telegram ({response.status_code}): {response.text}")
+    except Exception as e:
+        print(f"❌ Excepción en el envío a Telegram: {e}")
+
+
 def generar_whatsapp():
 
     ruta = Path(INPUT_FILE)
@@ -127,7 +158,7 @@ def generar_whatsapp():
     resultados = datos.get("resultados", [])
 
     if not resultados:
-        print("AVISO: No hay resultados para generar WhatsApp.")
+        print("AVISO: No hay resultados para generar el mensaje.")
         return
 
     lineas = []
@@ -210,6 +241,7 @@ def generar_whatsapp():
 
     texto_final = "\n".join(lineas).strip() + "\n"
 
+    # 1. Guardar en el archivo de texto
     with open(
         OUTPUT_FILE,
         "w",
@@ -219,6 +251,9 @@ def generar_whatsapp():
 
     print(f"Archivo '{OUTPUT_FILE}' creado correctamente.")
     print(f"Resultados incluidos: {len(resultados)}")
+
+    # 2. Enviar automáticamente por Telegram
+    enviar_telegram(texto_final)
 
 
 if __name__ == "__main__":
