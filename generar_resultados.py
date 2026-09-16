@@ -62,6 +62,9 @@ def obtener_resultados_rss():
 
     print(f"Elementos <item> encontrados: {len(nodes)}")
 
+    # Obtenemos la fecha del día actual en formato DD/MM/YYYY
+    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+
     resultados = []
 
     for item in nodes:
@@ -91,10 +94,12 @@ def obtener_resultados_rss():
             else:
                 resultado[tag] = text
 
-        if resultado:
-            resultados.append(resultado)
+        # Filtrado: solo añadimos el resultado si incluye la fecha de hoy
+        if resultado and "fecha" in resultado:
+            if fecha_hoy in resultado["fecha"]:
+                resultados.append(resultado)
 
-    print(f"Resultados extraídos: {len(resultados)}")
+    print(f"Resultados del día ({fecha_hoy}) extraídos: {len(resultados)}")
 
     return resultados
 
