@@ -1,30 +1,30 @@
 import json
 import re
+import html
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+
 RSS_URL = "https://www.juegosonce.es/rss/sorteos2.xml"
 OUTPUT_FILE = "resultados.json"
 
 
-def limpiar_html(texto):
+def limpiar_texto(texto):
     if not texto:
         return ""
 
+    texto = html.unescape(str(texto))
     texto = re.sub(r"<[^>]+>", " ", texto)
-    texto = texto.replace("&nbsp;", " ")
-    texto = texto.replace("&amp;", "&")
-    texto = texto.replace("&quot;", '"')
-    texto = texto.replace("&#39;", "'")
+    texto = texto.replace("\xa0", " ")
     texto = re.sub(r"\s+", " ", texto)
 
     return texto.strip()
 
 
 def nombre_tag(tag):
-    return tag.split("}")[-1].lower()
+    return tag.split("}")[-1].lower().strip()
 
 
 def descargar_rss():
@@ -34,6 +34,7 @@ def descargar_rss():
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 "
+            "(KHTML, like Gecko) "
             "Chrome/120.0 Safari/537.36"
         ),
         "Accept": "application/rss+xml, application/xml, text/xml, */*",
@@ -60,8 +61,10 @@ def descargar_rss():
 
 
 def obtener_items(contenido):
+
     try:
         raiz = ET.fromstring(contenido)
+
     except Exception as error:
         raise RuntimeError(
             f"No se pudo interpretar el XML del RSS: {error}"
@@ -70,6 +73,7 @@ def obtener_items(contenido):
     items = []
 
     for elemento in raiz.iter():
+
         if nombre_tag(elemento.tag) == "item":
             items.append(elemento)
 
@@ -79,26 +83,139 @@ def obtener_items(contenido):
 
 
 def leer_item(item):
+
     campos = {}
 
-    for hijo in item:
+    for elemento in item.iter():
 
-        nombre = nombre_tag(hijo.tag)
+        if elemento is item:
+            continue
 
-        valor = "".join(hijo.itertext())
+        tag = nombre_tag(elemento.tag)
 
-        valor = limpiar_html(valor)
+        texto = "".join(elemento.itertext())
+        texto = limpiar_texto(texto)
 
-        if valor:
-            campos[nombre] = valor
+        if not texto:
+            continue
+
+        # Si el mismo campo aparece varias veces,
+        # conservamos el primero no vacío.
+        if tag not in campos:
+            campos[tag] = texto
 
     return campos
 
 
-def extraer_numero(texto):
+def buscar_campo(campos, nombres):
+
+    for nombre in nombres:
+
+        valor = campos.get(nombre)
+
+        if valor:
+            return limpiar_texto(valor)
+
+    return ""
+
+
+def detectar_tipo(campos):
+
+    # Primero buscamos nombres habituales del RSS.
+    tipo = buscar_campo(
+        campos,
+        [
+            "title",
+            "titulo",
+            "name",
+            "nombre",
+            "game",
+            "juego",
+            "product",
+            "producto",
+            "draw",
+            "sorteo",
+        ]
+    )
+
+    if tipo:
+        return tipo
+
+    # Si el RSS no tiene título, buscamos palabras conocidas
+    # dentro de todos los campos.
+    texto = " ".join(campos.values()).lower()
+
     patrones = [
-        r"(?:número|numero|number)\s*[:=-]\s*([0-9][0-9\s,.-]*)",
-        r"(?:resultado)\s*[:=-]\s*([0-9][0-9\s,.-]*)",
+        ("Cupón Diario", ["cupón diario", "cupon diario"]),
+        ("Sueldazo", ["sueldazo"]),
+        ("Cuponazo", ["cuponazo"]),
+        ("Mi Día", ["mi día", "mi dia"]),
+        ("Triplex de la ONCE", ["triplex"]),
+        ("Dupla de la ONCE", ["dupla"]),
+        ("Super 11", ["super 11", "súper 11"]),
+        ("Eurojackpot", ["eurojackpot"]),
+        ("7 de la Suerte", ["7 de la suerte"]),
+        ("El Millonario", ["el millonario", "millonario"]),
+        ("Rasca", ["rasca"]),
+    ]
+
+    for nombre, palabras in patrones:
+
+        for palabra in palabras:
+
+            if palabra in texto:
+                return nombre
+
+    return ""
+
+
+def buscar_fecha(campos):
+
+    fecha = buscar_campo(
+        campos,
+        [
+            "pubdate",
+            "date",
+            "fecha",
+            "drawdate",
+            "sorteodate",
+        ]
+    )
+
+    return fecha
+
+
+def buscar_numero(campos):
+
+    # Campos estructurados que podría utilizar el RSS.
+    numero = buscar_campo(
+        campos,
+        [
+            "numero",
+            "number",
+            "result",
+            "resultado",
+            "winningnumber",
+            "winning-number",
+            "winning_number",
+            "combinacion",
+            "combinación",
+        ]
+    )
+
+    if numero:
+        return numero
+
+    texto = " ".join(campos.values())
+
+    patrones = [
+
+        r"(?:número|numero)\s*[:=]\s*([0-9][0-9\s,./-]*)",
+
+        r"(?:resultado)\s*[:=]\s*([0-9][0-9\s,./-]*)",
+
+        r"(?:number)\s*[:=]\s*([0-9][0-9\s,./-]*)",
+
     ]
 
     for patron in patrones:
@@ -110,15 +227,31 @@ def extraer_numero(texto):
         )
 
         if encontrado:
+
             return encontrado.group(1).strip()
 
     return ""
 
 
-def extraer_serie(texto):
+def buscar_serie(campos):
+
+    serie = buscar_campo(
+        campos,
+        [
+            "serie",
+            "series",
+            "seriesnumber",
+            "serial",
+        ]
+    )
+
+    if serie:
+        return serie
+
+    texto = " ".join(campos.values())
 
     encontrado = re.search(
-        r"serie\s*[:=-]\s*([0-9]+)",
+        r"serie\s*[:=]\s*([0-9]+)",
         texto,
         re.IGNORECASE
     )
@@ -129,11 +262,30 @@ def extraer_serie(texto):
     return ""
 
 
-def extraer_bote(texto):
+def buscar_bote(campos):
+
+    bote = buscar_campo(
+        campos,
+        [
+            "importebote",
+            "importe-bote",
+            "importe_bote",
+            "bote",
+            "jackpot",
+            "prize",
+            "premio",
+        ]
+    )
+
+    if bote:
+        return bote
+
+    texto = " ".join(campos.values())
 
     patrones = [
-        r"importe\s*bote\s*[:=-]\s*([0-9.,]+)",
-        r"bote\s*[:=-]\s*([0-9.,]+)",
+        r"importe\s*bote\s*[:=]\s*([0-9.,]+)",
+        r"bote\s*[:=]\s*([0-9.,]+)",
+        r"jackpot\s*[:=]\s*([0-9.,]+)",
     ]
 
     for patron in patrones:
@@ -152,72 +304,15 @@ def extraer_bote(texto):
 
 def convertir_item(campos):
 
-    tipo = (
-        campos.get("title")
-        or campos.get("titulo")
-        or ""
-    ).strip()
+    tipo = detectar_tipo(campos)
 
-    descripcion = (
-        campos.get("description")
-        or campos.get("descripcion")
-        or ""
-    ).strip()
+    if not tipo:
+        return None
 
-    fecha = (
-        campos.get("pubdate")
-        or campos.get("date")
-        or campos.get("fecha")
-        or ""
-    ).strip()
-
-    enlace = (
-        campos.get("link")
-        or campos.get("enlace")
-        or ""
-    ).strip()
-
-    numero = (
-        campos.get("numero")
-        or campos.get("number")
-        or ""
-    ).strip()
-
-    serie = (
-        campos.get("serie")
-        or ""
-    ).strip()
-
-    bote = (
-        campos.get("importebote")
-        or campos.get("bote")
-        or ""
-    ).strip()
-
-    adic = (
-        campos.get("adic")
-        or ""
-    ).strip()
-
-    texto_completo = (
-        tipo + " " +
-        descripcion
-    )
-
-    if not numero:
-        numero = extraer_numero(
-            texto_completo
-        )
-
-    if not serie:
-        serie = extraer_serie(
-            texto_completo
-        )
-
-    if not bote:
-        bote = extraer_bote(
-            texto_completo
-        )
+    fecha = buscar_fecha(campos)
+    numero = buscar_numero(campos)
+    serie = buscar_serie(campos)
+    bote = buscar_bote(campos)
 
     resultado = {
         "tipo": tipo,
@@ -227,14 +322,32 @@ def convertir_item(campos):
         "importebote": bote,
     }
 
-    if adic:
-        resultado["adic"] = adic
+    # Guardamos también información adicional si existe.
+    descripcion = buscar_campo(
+        campos,
+        [
+            "description",
+            "descripcion",
+            "summary",
+            "content",
+            "encoded",
+        ]
+    )
 
-    if enlace:
-        resultado["enlace"] = enlace
+    enlace = buscar_campo(
+        campos,
+        [
+            "link",
+            "enlace",
+            "url",
+        ]
+    )
 
     if descripcion:
         resultado["descripcion"] = descripcion
+
+    if enlace:
+        resultado["enlace"] = enlace
 
     return resultado
 
@@ -243,24 +356,34 @@ def obtener_resultados():
 
     contenido = descargar_rss()
 
-    items = obtener_items(
-        contenido
-    )
+    items = obtener_items(contenido)
 
     resultados = []
 
-    for item in items:
+    for posicion, item in enumerate(items, start=1):
 
         campos = leer_item(item)
 
-        resultado = convertir_item(
-            campos
+        print(
+            f"Procesando item {posicion}: "
+            f"{list(campos.keys())}"
         )
 
-        if resultado["tipo"]:
+        resultado = convertir_item(campos)
 
-            resultados.append(
-                resultado
+        if resultado:
+
+            resultados.append(resultado)
+
+            print(
+                f"  OK: {resultado['tipo']} "
+                f"| {resultado['numero']}"
+            )
+
+        else:
+
+            print(
+                "  AVISO: no se pudo identificar el tipo del sorteo"
             )
 
     print(
@@ -275,8 +398,8 @@ def guardar_resultados(resultados):
     if not resultados:
 
         raise RuntimeError(
-            "El RSS de ONCE no ha devuelto resultados. "
-            "No se sobrescribe resultados.json."
+            "El RSS de ONCE contiene items, "
+            "pero no se ha podido identificar ningún resultado."
         )
 
     ahora = datetime.now(
@@ -305,6 +428,10 @@ def guardar_resultados(resultados):
 
     print(
         f"{OUTPUT_FILE} creado correctamente."
+    )
+
+    print(
+        f"Resultados guardados: {len(resultados)}"
     )
 
 
