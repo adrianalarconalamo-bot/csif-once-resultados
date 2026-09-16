@@ -3,8 +3,10 @@ name: Resultados
 on:
   workflow_dispatch:
   schedule:
-    # Se ejecuta a las 21:30 (hora peninsular española)
+    # Intento 1: 21:30 h (España / 19:30 UTC)
     - cron: "30 19 * * *"
+    # Intento 2: 21:35 h (España / 19:35 UTC)
+    - cron: "35 19 * * *"
 
 permissions:
   contents: write
