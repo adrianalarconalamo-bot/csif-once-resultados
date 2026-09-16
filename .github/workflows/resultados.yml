@@ -21,13 +21,16 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Ejecutar generador
+      - name: Ejecutar generador de resultados
         run: python generar_resultados.py
 
-      - name: Guardar resultados.json
+      - name: Generar texto para WhatsApp
+        run: python generar_whatsapp.py
+
+      - name: Guardar resultados y WhatsApp
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add resultados.json
+          git add resultados.json whatsapp.txt
           git diff --cached --quiet || git commit -m "Actualizar resultados"
           git push
