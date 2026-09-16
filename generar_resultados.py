@@ -1,123 +1,211 @@
 import json
+import html
 import re
-import urllib.request
-import xml.etree.ElementTree as ET
+import os
+import requests
+from pathlib import Path
 from datetime import datetime
-from zoneinfo import ZoneInfo  # Incluido en la librería estándar de Python 3.9+
+from zoneinfo import ZoneInfo
 
-RSS_URL = "https://www.juegosonce.es/rss/sorteos2.xml"
-OUTPUT_FILE = "resultados.json"
+INPUT_FILE = "resultados.json"
+OUTPUT_FILE = "whatsapp.txt"
+TELEFONO = "652 33 86 27"
 
 
-def clean_html(text):
-    if not text:
+def limpiar_texto(texto):
+    if not texto:
         return ""
-    clean = re.sub(r"<[^>]+>", " ", text)
-    clean = re.sub(r"\s+", " ", clean)
-    return clean.strip()
+    return html.unescape(str(texto)).strip()
 
 
-def obtener_resultados_rss():
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        ),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "es-ES,es;q=0.9",
+def extraer_numero_sorteo(texto):
+    """Detecta el número de sorteo (1 al 5) si viene indicado explícitamente."""
+    m = re.search(r'(?i)sorteo\s*(\d)', texto)
+    if m:
+        return int(m.group(1))
+    return None
+
+
+def formatear_super11(numero_str):
+    """Agrupa los números del Super 11 de 5 en 5."""
+    nums = re.findall(r'\d+', str(numero_str))
+    if not nums:
+        return numero_str
+
+    lineas = []
+    for i in range(0, len(nums), 5):
+        bloque = " ".join(f"{int(n):02d}" for n in nums[i:i+5])
+        lineas.append(bloque)
+    return "\n".join(lineas)
+
+
+def enviar_telegram(texto_mensaje):
+    """Envía el mensaje maquetado a Telegram."""
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    if not bot_token or not chat_id:
+        print("⚠️ No se envía a Telegram: Faltan secretos.")
+        return
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": texto_mensaje,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True
     }
-
-    print(f"Descargando RSS desde: {RSS_URL}")
-    request = urllib.request.Request(RSS_URL, headers=headers)
-
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            content = response.read()
+        r = requests.post(url, json=payload, timeout=15)
+        if r.status_code == 200:
+            print("✅ Mensaje enviado a Telegram correctamente.")
+        else:
+            print(f"❌ Error enviando a Telegram: {r.text}")
+    except Exception as e:
+        print(f"❌ Excepción enviando a Telegram: {e}")
 
-        print(f"Respuesta recibida: {len(content)} bytes")
-        root = ET.fromstring(content)
 
-    except Exception as error:
-        print(f"ERROR descargando/procesando RSS: {error}")
-        return []
+def generar_whatsapp():
+    ruta = Path(INPUT_FILE)
+    if not ruta.exists():
+        print(f"ERROR: No existe {INPUT_FILE}")
+        return
 
-    nodes = root.findall(".//item")
-    if not nodes:
-        nodes = [
-            element
-            for element in root.iter()
-            if element.tag.split("}")[-1].lower() == "item"
-        ]
+    with open(ruta, "r", encoding="utf-8") as archivo:
+        datos = json.load(archivo)
 
-    print(f"Elementos <item> encontrados: {len(nodes)}")
+    resultados = datos.get("resultados", [])
+    if not resultados:
+        print("AVISO: No hay resultados en el JSON.")
+        return
 
-    # Obtenemos la fecha actual referenciada SIEMPRE al horario de España
     ahora_espana = datetime.now(ZoneInfo("Europe/Madrid"))
-    fecha_hoy = ahora_espana.strftime("%d/%m/%Y")
-    
-    # Formato alternativo sin ceros iniciales (por si el RSS pone 5/9/2026 en lugar de 05/09/2026)
-    dia_sin_cero = str(ahora_espana.day)
-    mes_sin_cero = str(ahora_espana.month)
-    fecha_hoy_corta = f"{dia_sin_cero}/{mes_sin_cero}/{ahora_espana.year}"
+    dia_semana = ahora_espana.weekday()  # 0=Lunes, 4=Viernes, 5=Sábado, 6=Domingo
 
-    resultados = []
-    todos_los_resultados = []
+    # Identificar la etiqueta adecuada para el cupón según el día
+    if dia_semana == 4:
+        etiqueta_cupon = "🔘 *Cuponazo*"
+    elif dia_semana in (5, 6):
+        etiqueta_cupon = "🔘 *Sueldazo*"
+    else:
+        etiqueta_cupon = "🔘 *Cupón Diario*"
 
-    for item in nodes:
-        resultado = {}
+    cupon_principal = None
+    eurojackpot = None
+    mi_dia = None
 
-        for child in item:
-            tag = child.tag.split("}")[-1].lower()
-            text = child.text or ""
-            text = clean_html(text)
+    sorteos_diarios = {1: {}, 2: {}, 3: {}, 4: {}, 5: {}}
+    contadores = {"triplex": 1, "super11": 1, "dupla": 1}
 
-            if not text:
-                continue
+    for r in resultados:
+        tipo = limpiar_texto(r.get("tipo", "")).upper()
+        desc = limpiar_texto(r.get("descripcion", "")).upper()
+        texto_comb = f"{tipo} {desc}"
 
-            if tag == "title":
-                resultado["tipo"] = text
-            elif tag in ("pubdate", "date"):
-                resultado["fecha"] = text
-            elif tag == "description":
-                resultado["descripcion"] = text
-            elif tag == "link":
-                resultado["enlace"] = text
-            else:
-                resultado[tag] = text
+        num_explicit = extraer_numero_sorteo(texto_comb)
 
-        if resultado:
-            todos_los_resultados.append(resultado)
-            
-            # Comprobación de fecha flexible en cualquiera de los campos de texto
-            texto_completo = f"{resultado.get('fecha', '')} {resultado.get('tipo', '')} {resultado.get('descripcion', '')}"
-            if fecha_hoy in texto_completo or fecha_hoy_corta in texto_completo:
-                resultados.append(resultado)
+        if "CUPÓN" in tipo or "CUPONAZO" in tipo or "SUELDAZO" in tipo:
+            cupon_principal = r
+        elif "EUROJACKPOT" in tipo or "EURO JACKPOT" in tipo:
+            eurojackpot = r
+        elif "MI DÍA" in tipo or "MI DIA" in tipo:
+            mi_dia = r
+        elif "TRIPLEX" in tipo:
+            slot = num_explicit if num_explicit else contadores["triplex"]
+            if slot <= 5:
+                sorteos_diarios[slot]["triplex"] = r
+                contadores["triplex"] = slot + 1
+        elif "SÚPER 11" in tipo or "SUPER 11" in tipo:
+            slot = num_explicit if num_explicit else contadores["super11"]
+            if slot <= 5:
+                sorteos_diarios[slot]["super11"] = r
+                contadores["super11"] = slot + 1
+        elif "DUPLA" in tipo:
+            slot = num_explicit if num_explicit else contadores["dupla"]
+            if slot <= 5:
+                sorteos_diarios[slot]["dupla"] = r
+                contadores["dupla"] = slot + 1
 
-    # Si no hay resultados estrictos de hoy (por retraso en la publicación del RSS),
-    # tomamos los primeros 5 elementos del RSS para evitar dejar el JSON vacío
-    if not resultados and todos_los_resultados:
-        print("⚠️ No se encontraron elementos coincidentes con la fecha exacta de hoy. Guardando últimos disponibles.")
-        resultados = todos_los_resultados[:5]
+    # CONSTRUCCIÓN DEL MENSAJE
+    lineas = []
+    lineas.append("📢 *CSIF INFORMA*")
+    lineas.append("El sorteo de hoy")
 
-    print(f"Resultados procesados: {len(resultados)}")
-    return resultados
+    dias_nombre = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    lineas.append(f"*{dias_nombre[dia_semana]}*")
+    lineas.append(f"*{ahora_espana.day:02d}  {ahora_espana.month:02d}  {ahora_espana.year}*")
+    lineas.append("")
 
+    # 1. Cupón Principal (Cupón Diario / Cuponazo / Sueldazo)
+    if cupon_principal:
+        lineas.append(etiqueta_cupon)
+        numero = cupon_principal.get('numero', '')
+        serie = cupon_principal.get('serie', '')
+        if serie:
+            lineas.append(f"*{numero}* serie *{serie}*")
+        else:
+            lineas.append(f"*{numero}*")
+        lineas.append("")
 
-def main():
-    ahora_espana = datetime.now(ZoneInfo("Europe/Madrid"))
-    resultados = obtener_resultados_rss()
+    # 2. Eurojackpot
+    if eurojackpot:
+        lineas.append("💸 *Euro Jackpot* 💸")
+        numero = eurojackpot.get('numero', '')
+        bote = eurojackpot.get('importebote', eurojackpot.get('bote', ''))
 
-    data = {
-        "actualizado": ahora_espana.strftime("%d/%m/%Y %H:%M"),
-        "resultados": resultados
-    }
+        if numero:
+            lineas.append(f"*{numero}*")
+
+        if bote and bote != "0":
+            try:
+                millones = int(float(bote)) // 1000000
+                if millones > 0:
+                    lineas.append("*BOTE*")
+                    lineas.append(f"*{millones}* Millones €")
+                else:
+                    lineas.append(f"*BOTE:* {bote} €")
+            except Exception:
+                lineas.append(f"*BOTE:* {bote} €")
+        lineas.append("")
+
+    # 3. Sorteos 1 al 5
+    for i in range(1, 6):
+        s = sorteos_diarios[i]
+        if s or (i == 5 and mi_dia):
+            lineas.append(f"▫ *Sorteo {i}*")
+
+            if "dupla" in s:
+                lineas.append("Dupla")
+                lineas.append(f"*{s['dupla'].get('numero', '')}*")
+
+            if "triplex" in s:
+                lineas.append("Tríplex")
+                lineas.append(f"*{s['triplex'].get('numero', '')}*")
+
+            if "super11" in s:
+                lineas.append("Súper 11")
+                lineas.append(formatear_super11(s['super11'].get('numero', '')))
+
+            if i == 5 and mi_dia:
+                lineas.append("Mi Día 🍀")
+                lineas.append(f"*{mi_dia.get('numero', '')}*")
+
+            lineas.append("")
+
+    # Pie de mensaje
+    lineas.append("━━━━━━━━━━━━━━━")
+    lineas.append("🟢 *CSIF ONCE*")
+    lineas.append("ESTAMOS POR TI")
+    lineas.append(f"TEL: *{TELEFONO}*")
+    lineas.append("*Buenas Noches*")
+
+    texto_final = "\n".join(lineas).strip() + "\n"
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as archivo:
-        json.dump(data, archivo, ensure_ascii=False, indent=2)
+        archivo.write(texto_final)
 
-    print(f"Archivo {OUTPUT_FILE} creado correctamente.")
+    enviar_telegram(texto_final)
 
 
 if __name__ == "__main__":
-    main()
+    generar_whatsapp()
