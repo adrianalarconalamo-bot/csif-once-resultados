@@ -1,5 +1,6 @@
- import urllib.request
+import urllib.request
 import xml.etree.ElementTree as ET
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -20,41 +21,46 @@ def main():
     datos = descargar_xml()
     raiz = ET.fromstring(datos)
 
-    texto = []
+    resultados = []
 
-    texto.append("🍀 RESULTADOS ONCE")
-    texto.append(datetime.now().strftime("%d/%m/%Y"))
-    texto.append("")
+    for item in raiz.iter():
+        if item.tag.lower().endswith("item"):
+            titulo = ""
+            fecha = ""
+            descripcion = ""
 
-    # Buscar todos los elementos <item> del RSS
-    items = raiz.findall(".//item")
+            for elemento in item:
+                nombre = elemento.tag.lower()
 
-    print(f"Items encontrados: {len(items)}")
+                if nombre.endswith("title"):
+                    titulo = elemento.text or ""
 
-    for item in items:
-        titulo = item.findtext("title", default="").strip()
-        descripcion = item.findtext("description", default="").strip()
+                elif nombre.endswith("pubdate"):
+                    fecha = elemento.text or ""
 
-        if not titulo:
-            continue
+                elif nombre.endswith("description"):
+                    descripcion = elemento.text or ""
 
-        texto.append(titulo)
+            resultados.append({
+                "titulo": titulo.strip(),
+                "fecha": fecha.strip(),
+                "descripcion": descripcion.strip()
+            })
 
-        if descripcion:
-            texto.append(descripcion)
+    salida = {
+        "actualizado": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "resultados": resultados
+    }
 
-        texto.append("")
+    archivo = Path("resultados.json")
 
-    Path("salida").mkdir(exist_ok=True)
-
-    contenido = "\n".join(texto)
-
-    Path("salida/mensaje.txt").write_text(
-        contenido,
+    archivo.write_text(
+        json.dumps(salida, ensure_ascii=False, indent=2),
         encoding="utf-8"
     )
 
-    print(contenido)
+    print(f"OK: {len(resultados)} resultados guardados.")
+    print(f"Archivo generado: {archivo}")
 
 
 if __name__ == "__main__":
