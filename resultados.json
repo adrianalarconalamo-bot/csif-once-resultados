@@ -1,5 +1,5 @@
 {
-  "actualizado": "17/09/2026 00:26",
+  "actualizado": "17/09/2026 00:35",
   "resultados": [
     {
       "tipo": "Cupón Diario",
@@ -51,13 +51,6 @@
       "importebote": "0"
     },
     {
-      "tipo": "Eurojackpot",
-      "fecha": "Martes, 15/09/2026",
-      "numero": "05,06,10,27,42",
-      "serie": "01,08",
-      "importebote": "59000000"
-    },
-    {
       "tipo": "Dupla de la ONCE",
       "fecha": "Miércoles, 16/09/2026, Sorteo 1",
       "numero": "09",
@@ -90,13 +83,6 @@
       "fecha": "Miércoles, 16/09/2026, Sorteo 5",
       "numero": "08",
       "serie": "",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Cuponazo",
-      "fecha": "Viernes, 11/09/2026",
-      "numero": "94543",
-      "serie": "103",
       "importebote": "0"
     },
     {
@@ -133,20 +119,6 @@
       "numero": "04,07,10,14,17,18,19,21,23,24,25,32,40,42,58,62,67,70,75,79",
       "serie": "",
       "importebote": "1000000"
-    },
-    {
-      "tipo": "Sueldazo",
-      "fecha": "Sábado, 12/09/2026",
-      "numero": "58939",
-      "serie": "024",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo",
-      "fecha": "Domingo, 13/09/2026",
-      "numero": "33549",
-      "serie": "019",
-      "importebote": "0"
     }
   ]
 }
