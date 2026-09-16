@@ -5,39 +5,70 @@ from datetime import datetime
 from pathlib import Path
 import re
 
+
 URL = "https://www.juegosonce.es/rss/sorteos2.xml"
+SALIDA = Path("resultados.json")
 
 
 def descargar_xml():
-    req = urllib.request.Request(
+    print("Descargando RSS de la ONCE...")
+
+    request = urllib.request.Request(
         URL,
         headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+            "Accept": "application/rss+xml, application/xml, text/xml, */*"
         }
     )
 
-    with urllib.request.urlopen(req, timeout=30) as respuesta:
-        return respuesta.read()
+    with urllib.request.urlopen(request, timeout=30) as respuesta:
+        datos = respuesta.read()
+
+    print(f"XML descargado: {len(datos)} bytes")
+
+    if not datos:
+        raise RuntimeError("El RSS está vacío.")
+
+    return datos
 
 
-def limpiar_html(texto):
-    if not texto:
+def limpiar(texto):
+    if texto is None:
         return ""
 
+    texto = str(texto)
+
     texto = re.sub(r"<[^>]+>", " ", texto)
+
     texto = texto.replace("&nbsp;", " ")
     texto = texto.replace("&amp;", "&")
+    texto = texto.replace("&quot;", '"')
+    texto = texto.replace("&#39;", "'")
+
     texto = re.sub(r"\s+", " ", texto)
 
     return texto.strip()
 
 
-def obtener_texto(elemento, nombres):
-    for nombre in nombres:
-        hijo = elemento.find(nombre)
+def nombre_local(elemento):
+    """
+    Devuelve el nombre de la etiqueta ignorando namespaces.
+    Ejemplo:
+    {http://purl.org/rss/1.0/}title -> title
+    """
+    return elemento.tag.split("}")[-1].lower()
 
-        if hijo is not None and hijo.text:
-            texto = limpiar_html(hijo.text)
+
+def buscar_valor(elemento, nombres):
+    """
+    Busca recursivamente una etiqueta cuyo nombre coincida.
+    """
+
+    nombres = {x.lower() for x in nombres}
+
+    for hijo in elemento.iter():
+        if nombre_local(hijo) in nombres:
+            texto = limpiar(hijo.text)
 
             if texto:
                 return texto
@@ -45,103 +76,145 @@ def obtener_texto(elemento, nombres):
     return ""
 
 
-def main():
+def extraer_items(raiz):
+    """
+    Busca elementos RSS tipo item.
+    También acepta entry por si la fuente cambia a Atom.
+    """
 
-    datos = descargar_xml()
+    items = []
 
-    raiz = ET.fromstring(datos)
+    for elemento in raiz.iter():
+        nombre = nombre_local(elemento)
+
+        if nombre in ("item", "entry"):
+            items.append(elemento)
+
+    return items
+
+
+def extraer_resultados(xml):
+    try:
+        raiz = ET.fromstring(xml)
+    except ET.ParseError as e:
+        raise RuntimeError(f"No se ha podido interpretar el XML: {e}")
+
+    items = extraer_items(raiz)
+
+    print(f"Elementos encontrados en el RSS: {len(items)}")
+
+    if not items:
+        raise RuntimeError(
+            "El RSS se ha descargado correctamente, pero no contiene elementos item/entry."
+        )
 
     resultados = []
 
-    for elemento in raiz.iter():
+    for item in items:
 
-        titulo = obtener_texto(
-            elemento,
-            ["title", "titulo", "name", "nombre"]
+        titulo = buscar_valor(
+            item,
+            [
+                "title",
+                "titulo",
+                "name",
+                "nombre"
+            ]
         )
 
-        fecha = obtener_texto(
-            elemento,
-            ["pubDate", "date", "fecha", "dc:date"]
+        fecha = buscar_valor(
+            item,
+            [
+                "pubdate",
+                "published",
+                "updated",
+                "date",
+                "fecha"
+            ]
         )
 
-        descripcion = obtener_texto(
-            elemento,
-            ["description", "descripcion", "content"]
+        descripcion = buscar_valor(
+            item,
+            [
+                "description",
+                "summary",
+                "content",
+                "contenido",
+                "descripcion"
+            ]
         )
 
+        resultado = {
+            "titulo": titulo,
+            "fecha": fecha,
+            "descripcion": descripcion
+        }
+
+        # Solo añadimos resultados que tengan algún contenido real.
         if titulo or fecha or descripcion:
+            resultados.append(resultado)
 
-            resultados.append({
-                "titulo": titulo,
-                "fecha": fecha,
-                "descripcion": descripcion
-            })
+    return resultados
 
-    # Eliminar duplicados
-    resultados_limpios = []
 
-    vistos = set()
-
-    for resultado in resultados:
-
-        clave = (
-            resultado["titulo"],
-            resultado["fecha"],
-            resultado["descripcion"]
+def guardar_resultados(resultados):
+    if not resultados:
+        raise RuntimeError(
+            "ERROR: no se ha podido extraer NINGÚN resultado del RSS. "
+            "No se va a generar un resultados.json vacío."
         )
 
-        if clave not in vistos:
+    # Comprobación adicional para impedir el problema anterior.
+    completos = [
+        r for r in resultados
+        if r["titulo"] or r["fecha"] or r["descripcion"]
+    ]
 
-            vistos.add(clave)
-            resultados_limpios.append(resultado)
+    if not completos:
+        raise RuntimeError(
+            "ERROR: todos los resultados están vacíos. "
+            "La ejecución se detiene para no publicar datos incorrectos."
+        )
 
-    # Nos quedamos con los últimos resultados
-    resultados_limpios = resultados_limpios[:30]
-
-    salida = {
+    datos = {
         "actualizado": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "resultados": resultados_limpios
+        "resultados": resultados
     }
 
-    Path("resultados.json").write_text(
-        json.dumps(
-            salida,
+    with SALIDA.open("w", encoding="utf-8") as archivo:
+        json.dump(
+            datos,
+            archivo,
             ensure_ascii=False,
             indent=2
-        ),
-        encoding="utf-8"
-    )
+        )
 
-    # También generamos el mensaje de texto
-    Path("salida").mkdir(exist_ok=True)
+    print()
+    print("======================================")
+    print("RESULTADOS GENERADOS CORRECTAMENTE")
+    print("======================================")
+    print(f"Resultados extraídos: {len(resultados)}")
+    print(f"Archivo: {SALIDA}")
+    print()
 
-    texto = []
+    for numero, resultado in enumerate(resultados, start=1):
+        print(f"{numero}. {resultado['titulo']}")
+        print(f"   Fecha: {resultado['fecha']}")
+        print(f"   Descripción: {resultado['descripcion']}")
+        print()
 
-    texto.append("🍀 RESULTADOS ONCE")
-    texto.append(datetime.now().strftime("%d/%m/%Y"))
-    texto.append("")
 
-    for resultado in resultados_limpios:
+def main():
 
-        if resultado["titulo"]:
-            texto.append(resultado["titulo"])
+    print("======================================")
+    print(" GENERADOR DE RESULTADOS ONCE")
+    print("======================================")
 
-        if resultado["fecha"]:
-            texto.append(resultado["fecha"])
+    xml = descargar_xml()
 
-        if resultado["descripcion"]:
-            texto.append(resultado["descripcion"])
+    resultados = extraer_resultados(xml)
 
-        texto.append("")
-
-    Path("salida/mensaje.txt").write_text(
-        "\n".join(texto),
-        encoding="utf-8"
-    )
-
-    print("Resultados encontrados:", len(resultados_limpios))
-    print(json.dumps(salida, ensure_ascii=False, indent=2))
+    guardar_resultados(resultados)
 
 
 if __name__ == "__main__":
