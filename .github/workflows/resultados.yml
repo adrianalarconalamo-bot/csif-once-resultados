@@ -61,9 +61,9 @@ jobs:
               )
           PY
 
-      - name: Generar informe de demoras
+      - name: Calcular demoras
         run: |
-          python generar_demoras.py
+          python calcular_demoras.py
 
       - name: Generar mensaje CSIF INFORMA y enviar Telegram
         env:
