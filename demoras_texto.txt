@@ -1,37 +1,19 @@
-*18  Septiembre  2026*
+17  Septiembre  2026
 
-*Demora el reintegro de las primeras cifras del cupón*
-Sorteo Lunes a Viernes
+*Demora el reintegro  de las primeras cifras del cupón*
+Sorteo  Lunes a Viernes
 
-0  Más de 30 días  30 días
-1  Más de 30 días  30 días
-2  Más de 30 días  30 días
-3  Más de 30 días  30 días
-4  Más de 30 días  30 días
-5  Más de 30 días  30 días
-6  Más de 30 días  30 días
-7  Más de 30 días  30 días
-9  Más de 30 días  30 días
-8  17 Sep 26  01 día
+8 17 Sep 26  00 días
 
- Hola la primera cifra solo se cuenta de lunes a viernes,
- (_*el sábado y domingo no hay reintegro y esos días no se cuentan.)*
+ Hola la primera cifra  solo se cuenta de lunes a viernes,
+ (_*el sábado y domingo no hay reintegro y esos días no se cuentan. )*
 
 *Demora las terminaciones*
 *del cupón*
 
-0  Más de 30 días  30 días
-1  Más de 30 días  30 días
-2  Más de 30 días  30 días
-3  Más de 30 días  30 días
-4  Más de 30 días  30 días
-5  Más de 30 días  30 días
-6  Más de 30 días  30 días
-7  Más de 30 días  30 días
-9  Más de 30 días  30 días
-8  17 Sep 26  01 día
+8 17 Sep 26  00 días
 
 CSIF ONCE
 ESTAMOS POR TI
-TEL: *652 33 86 27*
+TEL: *652338627*
 *Buenas noches*
