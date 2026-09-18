@@ -2,6 +2,7 @@ import json
 import re
 import html
 import urllib.request
+import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -10,6 +11,24 @@ from zoneinfo import ZoneInfo
 RSS_URL = "https://www.juegosonce.es/rss/sorteos2.xml"
 OUTPUT_FILE = "resultados.json"
 
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 "
+        "(KHTML, like Gecko) "
+        "Chrome/120.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/html,application/xhtml+xml,"
+        "application/xml,text/xml,*/*"
+    ),
+    "Accept-Language": "es-ES,es;q=0.9",
+}
+
+
+# ==========================================================
+# UTILIDADES
+# ==========================================================
 
 def limpiar_texto(texto):
     if not texto:
@@ -23,61 +42,172 @@ def limpiar_texto(texto):
     return texto.strip()
 
 
-def nombre_tag(tag):
-    return tag.split("}")[-1].lower().strip()
-
-
-def descargar_rss():
-    print(f"Descargando RSS desde: {RSS_URL}")
-
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 "
-            "(KHTML, like Gecko) "
-            "Chrome/120.0 Safari/537.36"
-        ),
-        "Accept": "application/rss+xml, application/xml, text/xml, */*",
-        "Accept-Language": "es-ES,es;q=0.9",
-    }
+def descargar_url(url):
+    print(f"Descargando: {url}")
 
     request = urllib.request.Request(
-        RSS_URL,
-        headers=headers
+        url,
+        headers=HEADERS
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=30) as respuesta:
+        with urllib.request.urlopen(
+            request,
+            timeout=30
+        ) as respuesta:
+
             contenido = respuesta.read()
 
-        print(f"XML descargado: {len(contenido)} bytes")
+        print(
+            f"Descargado correctamente: "
+            f"{len(contenido)} bytes"
+        )
 
         return contenido
 
     except Exception as error:
-        raise RuntimeError(
-            f"No se pudo descargar el RSS de ONCE: {error}"
+
+        print(
+            f"AVISO: no se pudo descargar "
+            f"{url}: {error}"
         )
 
+        return b""
 
-def obtener_items(contenido):
+
+def texto_html(contenido):
+    if not contenido:
+        return ""
 
     try:
+        texto = contenido.decode(
+            "utf-8",
+            errors="ignore"
+        )
+
+    except Exception:
+        texto = str(contenido)
+
+    texto = html.unescape(texto)
+    texto = re.sub(
+        r"<script\b[^>]*>.*?</script>",
+        " ",
+        texto,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
+    texto = re.sub(
+        r"<style\b[^>]*>.*?</style>",
+        " ",
+        texto,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
+    texto = re.sub(
+        r"<[^>]+>",
+        " ",
+        texto
+    )
+
+    texto = re.sub(
+        r"\s+",
+        " ",
+        texto
+    )
+
+    return texto.strip()
+
+
+def extraer_fecha(texto):
+
+    if not texto:
+        return None
+
+    encontrado = re.search(
+        r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b",
+        texto
+    )
+
+    if encontrado:
+
+        try:
+
+            return datetime(
+                int(encontrado.group(3)),
+                int(encontrado.group(2)),
+                int(encontrado.group(1))
+            ).date()
+
+        except ValueError:
+            pass
+
+    meses = {
+        "enero": 1,
+        "febrero": 2,
+        "marzo": 3,
+        "abril": 4,
+        "mayo": 5,
+        "junio": 6,
+        "julio": 7,
+        "agosto": 8,
+        "septiembre": 9,
+        "octubre": 10,
+        "noviembre": 11,
+        "diciembre": 12,
+    }
+
+    patron = re.search(
+        r"(\d{1,2})\s+de\s+"
+        r"(enero|febrero|marzo|abril|mayo|junio|julio|"
+        r"agosto|septiembre|octubre|noviembre|diciembre)"
+        r"\s+de\s+(\d{4})",
+        texto.lower()
+    )
+
+    if patron:
+
+        try:
+
+            return datetime(
+                int(patron.group(3)),
+                meses[patron.group(2)],
+                int(patron.group(1))
+            ).date()
+
+        except ValueError:
+            pass
+
+    return None
+
+
+# ==========================================================
+# RSS
+# ==========================================================
+
+def obtener_items_rss(contenido):
+
+    if not contenido:
+        return []
+
+    try:
+
         raiz = ET.fromstring(contenido)
 
     except Exception as error:
-        raise RuntimeError(
-            f"No se pudo interpretar el XML del RSS: {error}"
+
+        print(
+            f"AVISO: no se pudo interpretar "
+            f"el XML: {error}"
         )
+
+        return []
 
     items = []
 
     for elemento in raiz.iter():
 
-        if nombre_tag(elemento.tag) == "item":
+        if elemento.tag.split("}")[-1].lower() == "item":
             items.append(elemento)
-
-    print(f"Elementos <item> encontrados: {len(items)}")
 
     return items
 
@@ -91,15 +221,13 @@ def leer_item(item):
         if elemento is item:
             continue
 
-        tag = nombre_tag(elemento.tag)
+        tag = elemento.tag.split("}")[-1].lower()
 
-        texto = "".join(elemento.itertext())
-        texto = limpiar_texto(texto)
+        texto = limpiar_texto(
+            "".join(elemento.itertext())
+        )
 
-        if not texto:
-            continue
-
-        if tag not in campos:
+        if texto and tag not in campos:
             campos[tag] = texto
 
     return campos
@@ -119,39 +247,63 @@ def buscar_campo(campos, nombres):
 
 def detectar_tipo(campos):
 
-    tipo = buscar_campo(
-        campos,
-        [
-            "title",
-            "titulo",
-            "name",
-            "nombre",
-            "game",
-            "juego",
-            "product",
-            "producto",
-            "draw",
-            "sorteo",
-        ]
-    )
-
-    if tipo:
-        return tipo
-
-    texto = " ".join(campos.values()).lower()
+    texto = " ".join(
+        campos.values()
+    ).lower()
 
     patrones = [
-        ("Cupón Diario", ["cupón diario", "cupon diario"]),
-        ("Sueldazo", ["sueldazo"]),
-        ("Cuponazo", ["cuponazo"]),
-        ("Mi Día", ["mi día", "mi dia"]),
-        ("Triplex de la ONCE", ["triplex"]),
-        ("Dupla de la ONCE", ["dupla"]),
-        ("Super 11", ["super 11", "súper 11"]),
-        ("Eurojackpot", ["eurojackpot"]),
-        ("7 de la Suerte", ["7 de la suerte"]),
-        ("El Millonario", ["el millonario", "millonario"]),
-        ("Rasca", ["rasca"]),
+        (
+            "Cupón Diario",
+            [
+                "cupón diario",
+                "cupon diario"
+            ]
+        ),
+        (
+            "Cuponazo",
+            [
+                "cuponazo"
+            ]
+        ),
+        (
+            "Sueldazo",
+            [
+                "sueldazo"
+            ]
+        ),
+        (
+            "Mi Día",
+            [
+                "mi día",
+                "mi dia"
+            ]
+        ),
+        (
+            "Triplex de la ONCE",
+            [
+                "triplex"
+            ]
+        ),
+        (
+            "Dupla de la ONCE",
+            [
+                "dupla"
+            ]
+        ),
+        (
+            "Super 11",
+            [
+                "super 11",
+                "súper 11",
+                "superonce"
+            ]
+        ),
+        (
+            "Eurojackpot",
+            [
+                "eurojackpot"
+            ]
+        ),
     ]
 
     for nombre, palabras in patrones:
@@ -162,20 +314,6 @@ def detectar_tipo(campos):
                 return nombre
 
     return ""
-
-
-def buscar_fecha(campos):
-
-    return buscar_campo(
-        campos,
-        [
-            "pubdate",
-            "date",
-            "fecha",
-            "drawdate",
-            "sorteodate",
-        ]
-    )
 
 
 def buscar_numero(campos):
@@ -198,12 +336,19 @@ def buscar_numero(campos):
     if numero:
         return numero
 
-    texto = " ".join(campos.values())
+    texto = " ".join(
+        campos.values()
+    )
 
     patrones = [
-        r"(?:número|numero)\s*[:=]\s*([0-9][0-9\s,./-]*)",
-        r"(?:resultado)\s*[:=]\s*([0-9][0-9\s,./-]*)",
-        r"(?:number)\s*[:=]\s*([0-9][0-9\s,./-]*)",
+        r"(?:número|numero)\s*[:=]\s*"
+        r"([0-9][0-9\s,./-]*)",
+
+        r"(?:resultado)\s*[:=]\s*"
+        r"([0-9][0-9\s,./-]*)",
+
+        r"(?:number)\s*[:=]\s*"
+        r"([0-9][0-9\s,./-]*)",
     ]
 
     for patron in patrones:
@@ -235,7 +380,9 @@ def buscar_serie(campos):
     if serie:
         return serie
 
-    texto = " ".join(campos.values())
+    texto = " ".join(
+        campos.values()
+    )
 
     encontrado = re.search(
         r"serie\s*[:=]\s*([0-9]+)",
@@ -260,234 +407,355 @@ def buscar_bote(campos):
             "bote",
             "jackpot",
             "prize",
-            "premio",
         ]
     )
 
     if bote:
         return bote
 
-    texto = " ".join(campos.values())
+    return "0"
 
-    patrones = [
-        r"importe\s*bote\s*[:=]\s*([0-9.,]+)",
-        r"bote\s*[:=]\s*([0-9.,]+)",
-        r"jackpot\s*[:=]\s*([0-9.,]+)",
-    ]
 
-    for patron in patrones:
+# ==========================================================
+# RESULTADOS DESDE RSS
+# ==========================================================
 
-        encontrado = re.search(
-            patron,
+def obtener_resultados_rss():
+
+    contenido = descargar_url(
+        RSS_URL
+    )
+
+    items = obtener_items_rss(
+        contenido
+    )
+
+    resultados = []
+
+    for item in items:
+
+        campos = leer_item(item)
+
+        tipo = detectar_tipo(
+            campos
+        )
+
+        if not tipo:
+            continue
+
+        resultado = {
+            "tipo": tipo,
+            "fecha": buscar_campo(
+                campos,
+                [
+                    "pubdate",
+                    "date",
+                    "fecha",
+                    "drawdate",
+                    "sorteodate",
+                ]
+            ),
+            "numero": buscar_numero(
+                campos
+            ),
+            "serie": buscar_serie(
+                campos
+            ),
+            "importebote": buscar_bote(
+                campos
+            ),
+        }
+
+        resultados.append(
+            resultado
+        )
+
+    print(
+        f"Resultados obtenidos del RSS: "
+        f"{len(resultados)}"
+    )
+
+    return resultados
+
+
+# ==========================================================
+# CUPONES DESDE WEB OFICIAL
+# ==========================================================
+
+def extraer_cupon_desde_web(
+    tipo,
+    url
+):
+
+    contenido = descargar_url(
+        url
+    )
+
+    if not contenido:
+        return None
+
+    texto = texto_html(
+        contenido
+    )
+
+    texto_lower = texto.lower()
+
+    if tipo == "Cuponazo":
+
+        if "cuponazo" not in texto_lower:
+            return None
+
+    elif tipo == "Sueldazo":
+
+        if "sueldazo" not in texto_lower:
+            return None
+
+    elif tipo == "Cupón Diario":
+
+        if "cupón diario" not in texto_lower and \
+           "cupon diario" not in texto_lower:
+            return None
+
+    fecha = extraer_fecha(
+        texto
+    )
+
+    if not fecha:
+        print(
+            f"AVISO: no se encontró fecha "
+            f"para {tipo}"
+        )
+        return None
+
+    # Buscamos primero el patrón oficial:
+    # Número: 12345, serie: 123
+
+    patron = re.search(
+        r"Número\s*[:\-]?\s*"
+        r"([0-9]{5})"
+        r".{0,100}?"
+        r"serie\s*[:\-]?\s*"
+        r"([0-9]{3})",
+        texto,
+        re.IGNORECASE
+    )
+
+    if not patron:
+
+        patron = re.search(
+            r"numero\s*[:\-]?\s*"
+            r"([0-9]{5})"
+            r".{0,100}?"
+            r"serie\s*[:\-]?\s*"
+            r"([0-9]{3})",
             texto,
             re.IGNORECASE
         )
 
-        if encontrado:
-            return encontrado.group(1).strip()
+    if not patron:
 
-    return "0"
+        print(
+            f"AVISO: no se encontró "
+            f"número/serie de {tipo}"
+        )
 
-
-def convertir_item(campos):
-
-    tipo = detectar_tipo(campos)
-
-    if not tipo:
         return None
 
-    fecha = buscar_fecha(campos)
-    numero = buscar_numero(campos)
-    serie = buscar_serie(campos)
-    bote = buscar_bote(campos)
+    numero = patron.group(1)
+    serie = patron.group(2)
+
+    dia = fecha.strftime(
+        "%d/%m/%Y"
+    )
+
+    dias = [
+        "lunes",
+        "martes",
+        "miércoles",
+        "jueves",
+        "viernes",
+        "sábado",
+        "domingo",
+    ]
+
+    dia_semana = dias[
+        fecha.weekday()
+    ]
+
+    fecha_formateada = (
+        f"{dia_semana.capitalize()}, "
+        f"{dia}"
+    )
 
     resultado = {
         "tipo": tipo,
-        "fecha": fecha,
+        "fecha": fecha_formateada,
         "numero": numero,
         "serie": serie,
-        "importebote": bote,
+        "importebote": "0",
     }
 
-    descripcion = buscar_campo(
-        campos,
-        [
-            "description",
-            "descripcion",
-            "summary",
-            "content",
-            "encoded",
-        ]
+    print(
+        f"✓ WEB OFICIAL: "
+        f"{tipo} | "
+        f"{fecha_formateada} | "
+        f"{numero} | "
+        f"serie {serie}"
     )
-
-    enlace = buscar_campo(
-        campos,
-        [
-            "link",
-            "enlace",
-            "url",
-        ]
-    )
-
-    if descripcion:
-        resultado["descripcion"] = descripcion
-
-    if enlace:
-        resultado["enlace"] = enlace
 
     return resultado
 
 
-def extraer_fecha_resultado(texto):
+# ==========================================================
+# OBTENER ÚLTIMO CUPÓN DISPONIBLE
+# ==========================================================
 
-    if not texto:
-        return None
+def obtener_cupones_oficiales():
 
-    texto = limpiar_texto(texto)
-
-    # Formato habitual del RSS:
-    # Miércoles, 16/09/2026
-    encontrado = re.search(
-        r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b",
-        texto
-    )
-
-    if encontrado:
-
-        try:
-            dia = int(encontrado.group(1))
-            mes = int(encontrado.group(2))
-            año = int(encontrado.group(3))
-
-            return datetime(
-                año,
-                mes,
-                dia
-            ).date()
-
-        except ValueError:
-            return None
-
-    return None
-
-
-def obtener_resultados():
-
-    contenido = descargar_rss()
-
-    items = obtener_items(contenido)
+    paginas = [
+        (
+            "Cupón Diario",
+            "https://www.juegosonce.es/"
+            "resultados-cupon-diario"
+        ),
+        (
+            "Cuponazo",
+            "https://www.juegosonce.es/"
+            "resultados-cuponazo"
+        ),
+        (
+            "Sueldazo",
+            "https://www.juegosonce.es/"
+            "resultados-sueldazo-fin-de-semana"
+        ),
+    ]
 
     resultados = []
 
-    for posicion, item in enumerate(items, start=1):
+    for tipo, url in paginas:
 
-        campos = leer_item(item)
-
-        print(
-            f"Procesando item {posicion}: "
-            f"{list(campos.keys())}"
+        resultado = extraer_cupon_desde_web(
+            tipo,
+            url
         )
-
-        resultado = convertir_item(campos)
 
         if resultado:
-
-            resultados.append(resultado)
-
-            print(
-                f"  OK: {resultado['tipo']} "
-                f"| {resultado['fecha']} "
-                f"| {resultado['numero']}"
+            resultados.append(
+                resultado
             )
 
-        else:
+    return resultados
 
-            print(
-                "  AVISO: no se pudo identificar "
-                "el tipo del sorteo"
-            )
 
-    print(
-        f"RESULTADOS OBTENIDOS: {len(resultados)}"
+# ==========================================================
+# COMBINAR RESULTADOS
+# ==========================================================
+
+def clave_resultado(resultado):
+
+    return (
+        resultado.get("tipo", "").upper(),
+        resultado.get("fecha", ""),
+        resultado.get("numero", ""),
+        resultado.get("serie", "")
     )
 
-    if not resultados:
-        raise RuntimeError(
-            "No se ha obtenido ningún resultado del RSS."
+
+def combinar_resultados(
+    resultados_rss,
+    resultados_web
+):
+
+    todos = []
+
+    for resultado in (
+        resultados_rss +
+        resultados_web
+    ):
+
+        clave = clave_resultado(
+            resultado
         )
 
-    # ==========================================================
-    # DETERMINAR LA FECHA MÁS RECIENTE DISPONIBLE EN EL RSS
-    # ==========================================================
+        if not any(
+            clave_resultado(x) == clave
+            for x in todos
+        ):
+            todos.append(
+                resultado
+            )
+
+    return todos
+
+
+# ==========================================================
+# FILTRAR FECHA MÁS RECIENTE
+# ==========================================================
+
+def filtrar_fecha_reciente(
+    resultados
+):
 
     fechas = []
 
     for resultado in resultados:
 
-        fecha = extraer_fecha_resultado(
-            resultado.get("fecha", "")
+        fecha = extraer_fecha(
+            resultado.get(
+                "fecha",
+                ""
+            )
         )
 
         if fecha:
-            fechas.append(fecha)
+            fechas.append(
+                fecha
+            )
 
     if not fechas:
         raise RuntimeError(
-            "No se ha podido determinar la fecha "
-            "de ningún resultado del RSS."
+            "No se pudo determinar "
+            "ninguna fecha."
         )
 
-    fecha_objetivo = max(fechas)
+    fecha_objetivo = max(
+        fechas
+    )
 
     print(
-        "FECHA MÁS RECIENTE DISPONIBLE EN EL RSS: "
+        "Fecha más reciente encontrada: "
         f"{fecha_objetivo.strftime('%d/%m/%Y')}"
     )
 
-    # ==========================================================
-    # FILTRAR SOLO LOS SORTEOS DE ESA FECHA
-    # ==========================================================
-
-    resultados_filtrados = []
+    finales = []
 
     for resultado in resultados:
 
-        fecha_resultado = extraer_fecha_resultado(
-            resultado.get("fecha", "")
+        fecha = extraer_fecha(
+            resultado.get(
+                "fecha",
+                ""
+            )
         )
 
-        if fecha_resultado == fecha_objetivo:
+        if fecha == fecha_objetivo:
 
-            resultados_filtrados.append(resultado)
-
-            print(
-                f"  ✓ INCLUIDO: "
-                f"{resultado['tipo']} | "
-                f"{resultado['fecha']} | "
-                f"{resultado['numero']}"
+            finales.append(
+                resultado
             )
 
-        else:
-
-            print(
-                f"  ✗ OMITIDO: "
-                f"{resultado['tipo']} | "
-                f"{resultado['fecha']} | "
-                f"{resultado['numero']}"
-            )
-
-    print(
-        f"RESULTADOS FINALES: "
-        f"{len(resultados_filtrados)}"
-    )
-
-    return resultados_filtrados
+    return finales
 
 
-def guardar_resultados(resultados):
+# ==========================================================
+# GUARDAR
+# ==========================================================
+
+def guardar_resultados(
+    resultados
+):
 
     if not resultados:
-
         raise RuntimeError(
             "No hay resultados para guardar."
         )
@@ -521,16 +789,63 @@ def guardar_resultados(resultados):
     )
 
     print(
-        f"Resultados guardados: {len(resultados)}"
+        f"Resultados finales: "
+        f"{len(resultados)}"
     )
 
+    for resultado in resultados:
+
+        print(
+            f"  {resultado['tipo']} | "
+            f"{resultado['fecha']} | "
+            f"{resultado['numero']} | "
+            f"{resultado.get('serie', '')}"
+        )
+
+
+# ==========================================================
+# PROGRAMA PRINCIPAL
+# ==========================================================
 
 def main():
 
-    resultados = obtener_resultados()
+    print(
+        "=========================================="
+    )
+    print(
+        "   ACTUALIZADOR RESULTADOS ONCE"
+    )
+    print(
+        "=========================================="
+    )
+
+    resultados_rss = (
+        obtener_resultados_rss()
+    )
+
+    resultados_web = (
+        obtener_cupones_oficiales()
+    )
+
+    todos = combinar_resultados(
+        resultados_rss,
+        resultados_web
+    )
+
+    if not todos:
+
+        raise RuntimeError(
+            "No se obtuvo ningún resultado."
+        )
+
+    resultados_finales = (
+        filtrar_fecha_reciente(
+            todos
+        )
+    )
 
     guardar_resultados(
-        resultados
+        resultados_finales
     )
 
 
