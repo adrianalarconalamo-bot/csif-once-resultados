@@ -1,5 +1,5 @@
 {
-  "actualizado": "18/09/2026 21:37",
+  "actualizado": "18/09/2026 22:14",
   "resultados": [
     {
       "tipo": "Triplex de la ONCE",
@@ -83,6 +83,13 @@
       "fecha": "Viernes, 18/09/2026, Sorteo 5",
       "numero": "05",
       "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Cuponazo",
+      "fecha": "Viernes, 18/09/2026",
+      "numero": "44982",
+      "serie": "097",
       "importebote": "0"
     },
     {
