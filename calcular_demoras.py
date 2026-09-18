@@ -1,149 +1,340 @@
 import json
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 RESULTADOS_FILE = "resultados.json"
+ESTADO_FILE = "demoras_estado.json"
 SALIDA_FILE = "demoras_texto.txt"
 
+ZONA_HORARIA = ZoneInfo("Europe/Madrid")
+
 
 # ============================================================
-# ESTADO INICIAL DE LAS DEMORAS
+# ESTADO INICIAL
 # ============================================================
 #
-# Estos son los últimos días en los que apareció cada dígito
-# según el listado facilitado por Adrián.
-#
-# PRIMERAS CIFRAS
-# 0 -> 10/08/2026
-# 7 -> 11/08/2026
-# 2 -> 04/09/2026
-# 1 -> 08/09/2026
-# 6 -> 09/09/2026
-# 9 -> 11/09/2026
-# 5 -> 15/09/2026
-# 3 -> 16/09/2026
-# 8 -> 17/09/2026
-# 4 -> 18/09/2026
-#
-# TERMINACIONES
-# 1 -> 24/08/2026
-# 6 -> 27/08/2026
-# 0 -> 30/08/2026
-# 7 -> 01/09/2026
-# 4 -> 07/09/2026
-# 5 -> 09/09/2026
-# 9 -> 13/09/2026
-# 3 -> 15/09/2026
-# 8 -> 17/09/2026
-# 2 -> 18/09/2026
-#
-# IMPORTANTE:
-# La demora se calcula solamente con días de lunes a viernes.
-# Sábado y domingo NO incrementan la demora.
+# Estado conocido al 18/09/2026.
+# A partir de aquí el programa continuará automáticamente.
 # ============================================================
 
+ESTADO_INICIAL = {
+    "ultima_fecha_procesada": "18/09/2026",
 
-ULTIMA_PRIMERA_CIFRA = {
-    "0": "10/08/2026",
-    "7": "11/08/2026",
-    "2": "04/09/2026",
-    "1": "08/09/2026",
-    "6": "09/09/2026",
-    "9": "11/09/2026",
-    "5": "15/09/2026",
-    "3": "16/09/2026",
-    "8": "17/09/2026",
-    "4": "18/09/2026",
-}
+    "primeras_cifras": {
+        "0": "10/08/2026",
+        "7": "11/08/2026",
+        "2": "04/09/2026",
+        "1": "08/09/2026",
+        "6": "09/09/2026",
+        "9": "11/09/2026",
+        "5": "15/09/2026",
+        "3": "16/09/2026",
+        "8": "17/09/2026",
+        "4": "18/09/2026"
+    },
 
-
-ULTIMA_TERMINACION = {
-    "1": "24/08/2026",
-    "6": "27/08/2026",
-    "0": "30/08/2026",
-    "7": "01/09/2026",
-    "4": "07/09/2026",
-    "5": "09/09/2026",
-    "9": "13/09/2026",
-    "3": "15/09/2026",
-    "8": "17/09/2026",
-    "2": "18/09/2026",
+    "terminaciones": {
+        "1": "24/08/2026",
+        "6": "27/08/2026",
+        "0": "30/08/2026",
+        "7": "01/09/2026",
+        "4": "07/09/2026",
+        "5": "09/09/2026",
+        "9": "13/09/2026",
+        "3": "15/09/2026",
+        "8": "17/09/2026",
+        "2": "18/09/2026"
+    }
 }
 
 
 # ============================================================
-# CONVERSIÓN DE FECHAS
+# FECHAS
 # ============================================================
 
-def convertir_fecha(fecha_texto):
+def convertir_fecha(texto):
     try:
         return datetime.strptime(
-            fecha_texto,
+            texto,
             "%d/%m/%Y"
         ).date()
-    except ValueError:
+    except (ValueError, TypeError):
         return None
 
 
-# ============================================================
-# DÍAS LABORABLES
-# ============================================================
+def fecha_hoy():
+    """
+    Fecha real de España.
+    No utilizamos la fecha del servidor de GitHub directamente.
+    """
+    return datetime.now(ZONA_HORARIA).date()
+
 
 def es_laborable(fecha):
-    """
-    Lunes = 0
-    Martes = 1
-    Miércoles = 2
-    Jueves = 3
-    Viernes = 4
-    Sábado = 5
-    Domingo = 6
-    """
     return fecha.weekday() < 5
 
 
 def contar_dias_laborables(fecha_inicio, fecha_fin):
     """
-    Cuenta días de lunes a viernes desde el día siguiente
-    a fecha_inicio hasta fecha_fin, ambos inclusive.
+    Cuenta únicamente lunes-viernes.
+
+    El día de aparición NO cuenta.
 
     Ejemplo:
-
-    Salió el jueves 17.
-    Viernes 18 = 1 día.
-    Sábado 19 = no cuenta.
-    Domingo 20 = no cuenta.
-    Lunes 21 = 2 días.
+    Viernes 18 -> Sábado 19 = 0
+    Viernes 18 -> Domingo 20 = 0
+    Viernes 18 -> Lunes 21 = 1
     """
 
     if fecha_fin <= fecha_inicio:
         return 0
 
-    dias = 0
+    contador = 0
     fecha = fecha_inicio + timedelta(days=1)
 
     while fecha <= fecha_fin:
 
         if es_laborable(fecha):
-            dias += 1
+            contador += 1
 
         fecha += timedelta(days=1)
 
-    return dias
+    return contador
 
 
 # ============================================================
-# FORMATO DE DÍAS
+# CARGAR / GUARDAR ESTADO
 # ============================================================
+
+def cargar_estado():
+
+    try:
+        with open(
+            ESTADO_FILE,
+            "r",
+            encoding="utf-8"
+        ) as archivo:
+            estado = json.load(archivo)
+
+        return estado
+
+    except (FileNotFoundError, json.JSONDecodeError):
+
+        estado = ESTADO_INICIAL.copy()
+
+        estado["primeras_cifras"] = (
+            ESTADO_INICIAL["primeras_cifras"].copy()
+        )
+
+        estado["terminaciones"] = (
+            ESTADO_INICIAL["terminaciones"].copy()
+        )
+
+        return estado
+
+
+def guardar_estado(estado):
+
+    with open(
+        ESTADO_FILE,
+        "w",
+        encoding="utf-8"
+    ) as archivo:
+
+        json.dump(
+            estado,
+            archivo,
+            ensure_ascii=False,
+            indent=2
+        )
+
+
+# ============================================================
+# BUSCAR RESULTADO DEL CUPÓN
+# ============================================================
+
+def obtener_numero_cupon(resultado):
+
+    tipo = str(
+        resultado.get("tipo", "")
+    ).lower()
+
+    numero = str(
+        resultado.get("numero", "")
+    ).strip()
+
+    if not numero:
+        return None
+
+    # No utilizar Triplex, Dupla, Super 11, Mi Día, etc.
+    tipos_validos = (
+        "cupón diario",
+        "cupon diario",
+        "cuponazo",
+    )
+
+    if any(tipo_valido in tipo for tipo_valido in tipos_validos):
+
+        # Nos quedamos solamente con las cifras.
+        numero_limpio = "".join(
+            caracter
+            for caracter in numero
+            if caracter.isdigit()
+        )
+
+        if numero_limpio:
+            return numero_limpio
+
+    return None
+
+
+def obtener_cupon_del_dia(datos, fecha):
+
+    for resultado in datos.get("resultados", []):
+
+        fecha_texto = str(
+            resultado.get("fecha", "")
+        )
+
+        try:
+            fecha_resultado = convertir_fecha(
+                fecha_texto.split(",")[-1].strip()
+            )
+        except Exception:
+            continue
+
+        if fecha_resultado != fecha:
+            continue
+
+        numero = obtener_numero_cupon(resultado)
+
+        if numero:
+            return numero
+
+    return None
+
+
+# ============================================================
+# ACTUALIZAR ESTADO
+# ============================================================
+
+def actualizar_estado(estado, fecha_actual, numero_cupon):
+
+    ultima_fecha = convertir_fecha(
+        estado["ultima_fecha_procesada"]
+    )
+
+    if ultima_fecha is None:
+        ultima_fecha = fecha_actual
+
+    # --------------------------------------------------------
+    # Si todavía no hemos avanzado de fecha
+    # --------------------------------------------------------
+
+    if fecha_actual <= ultima_fecha:
+
+        return estado
+
+    # --------------------------------------------------------
+    # El estado avanza día a día.
+    #
+    # Esto hace que:
+    #
+    # Viernes -> sábado = 0
+    # sábado -> domingo = 0
+    # domingo -> lunes = 1
+    #
+    # --------------------------------------------------------
+
+    for fecha in (
+        ultima_fecha + timedelta(days=1)
+        + timedelta(days=0),
+    ):
+        pass
+
+    # --------------------------------------------------------
+    # Si hoy hay nuevo número de cupón, actualizamos los
+    # dígitos correspondientes.
+    # --------------------------------------------------------
+
+    if numero_cupon:
+
+        primera_cifra = numero_cupon[0]
+        terminacion = numero_cupon[-1]
+
+        estado["primeras_cifras"][
+            primera_cifra
+        ] = fecha_actual.strftime("%d/%m/%Y")
+
+        estado["terminaciones"][
+            terminacion
+        ] = fecha_actual.strftime("%d/%m/%Y")
+
+        print(
+            f"Nuevo cupón detectado: {numero_cupon}"
+        )
+
+        print(
+            f"Primera cifra actualizada: {primera_cifra}"
+        )
+
+        print(
+            f"Terminación actualizada: {terminacion}"
+        )
+
+    estado["ultima_fecha_procesada"] = (
+        fecha_actual.strftime("%d/%m/%Y")
+    )
+
+    return estado
+
+
+# ============================================================
+# FORMATO
+# ============================================================
+
+MESES_CORTOS = {
+    1: "Ene",
+    2: "Feb",
+    3: "Mar",
+    4: "Abr",
+    5: "May",
+    6: "Jun",
+    7: "Jul",
+    8: "Ago",
+    9: "Sep",
+    10: "Oct",
+    11: "Nov",
+    12: "Dic",
+}
+
+
+MESES_LARGOS = {
+    1: "Enero",
+    2: "Febrero",
+    3: "Marzo",
+    4: "Abril",
+    5: "Mayo",
+    6: "Junio",
+    7: "Julio",
+    8: "Agosto",
+    9: "Septiembre",
+    10: "Octubre",
+    11: "Noviembre",
+    12: "Diciembre",
+}
+
+
+def formato_fecha_corta(fecha):
+
+    return (
+        f"{fecha.day:02d} "
+        f"{MESES_CORTOS[fecha.month]} "
+        f"{str(fecha.year)[2:]}"
+    )
+
 
 def formato_dias(dias):
-    """
-    Formato solicitado:
-
-    01 día
-    02 días
-    09 días
-    30 días
-    """
 
     if dias == 1:
         return "01 día"
@@ -152,14 +343,14 @@ def formato_dias(dias):
 
 
 # ============================================================
-# CALCULAR DEMORAS
+# GENERAR LISTA DE DEMORAS
 # ============================================================
 
-def calcular_lista(ultimas_fechas, fecha_actual):
+def calcular_lista(fechas, fecha_actual):
 
-    resultado = []
+    lista = []
 
-    for digito, fecha_texto in ultimas_fechas.items():
+    for digito, fecha_texto in fechas.items():
 
         fecha_salida = convertir_fecha(fecha_texto)
 
@@ -171,37 +362,37 @@ def calcular_lista(ultimas_fechas, fecha_actual):
             fecha_actual
         )
 
-        resultado.append({
+        lista.append({
             "digito": digito,
             "fecha": fecha_salida,
             "demora": demora
         })
 
-    # Orden cronológico:
-    # primero el que lleva más tiempo esperando.
-    resultado.sort(
-        key=lambda x: (
-            x["fecha"],
-            int(x["digito"])
+    # Ordenamos por fecha de aparición:
+    # del más antiguo al más reciente.
+    lista.sort(
+        key=lambda elemento: (
+            elemento["fecha"],
+            int(elemento["digito"])
         )
     )
 
-    return resultado
+    return lista
 
 
 # ============================================================
-# GENERAR TEXTO
+# GENERAR TEXTO FINAL
 # ============================================================
 
-def generar_texto(fecha_actual):
+def generar_texto(estado, fecha_actual):
 
     primeras = calcular_lista(
-        ULTIMA_PRIMERA_CIFRA,
+        estado["primeras_cifras"],
         fecha_actual
     )
 
     terminaciones = calcular_lista(
-        ULTIMA_TERMINACION,
+        estado["terminaciones"],
         fecha_actual
     )
 
@@ -212,8 +403,9 @@ def generar_texto(fecha_actual):
     # --------------------------------------------------------
 
     lineas.append(
-        fecha_actual.strftime("%d  %B  %Y")
-        .replace("September", "Septiembre")
+        f"{fecha_actual.day}  "
+        f"{MESES_LARGOS[fecha_actual.month]}  "
+        f"{fecha_actual.year}"
     )
 
     lineas.append("")
@@ -236,7 +428,7 @@ def generar_texto(fecha_actual):
 
         lineas.append(
             f"{dato['digito']} "
-            f"{dato['fecha'].strftime('%d %b %y')}"
+            f"{formato_fecha_corta(dato['fecha'])}"
             f"  {formato_dias(dato['demora'])}"
         )
 
@@ -270,7 +462,7 @@ def generar_texto(fecha_actual):
 
         lineas.append(
             f"{dato['digito']} "
-            f"{dato['fecha'].strftime('%d %b %y')}"
+            f"{formato_fecha_corta(dato['fecha'])}"
             f"  {formato_dias(dato['demora'])}"
         )
 
@@ -289,12 +481,21 @@ def generar_texto(fecha_actual):
 
 
 # ============================================================
-# FECHA DE TRABAJO
+# PROGRAMA PRINCIPAL
 # ============================================================
 
-def obtener_fecha_actual():
+def main():
 
+    fecha_actual = fecha_hoy()
+
+    print(
+        f"Fecha de España: "
+        f"{fecha_actual.strftime('%d/%m/%Y')}"
+    )
+
+    # Cargar resultados
     try:
+
         with open(
             RESULTADOS_FILE,
             "r",
@@ -303,50 +504,60 @@ def obtener_fecha_actual():
 
             datos = json.load(archivo)
 
-    except Exception:
-        datos = {}
+    except (FileNotFoundError, json.JSONDecodeError):
 
-    fechas = []
+        datos = {
+            "resultados": []
+        }
 
-    for resultado in datos.get("resultados", []):
+    # Cargar estado
+    estado = cargar_estado()
 
-        fecha_texto = resultado.get("fecha", "")
+    ultima_fecha = convertir_fecha(
+        estado["ultima_fecha_procesada"]
+    )
 
-        if not fecha_texto:
-            continue
+    # Buscar el cupón del día
+    numero_cupon = obtener_cupon_del_dia(
+        datos,
+        fecha_actual
+    )
 
-        try:
+    if numero_cupon:
 
-            # Ejemplo:
-            # "Viernes, 18/09/2026"
+        print(
+            f"Cupón del día encontrado: {numero_cupon}"
+        )
 
-            fecha_parte = fecha_texto.split(",")[-1].strip()
+    else:
 
-            fecha = convertir_fecha(fecha_parte)
+        print(
+            "No hay nuevo cupón para esta fecha."
+        )
 
-            if fecha:
-                fechas.append(fecha)
+    # Actualizar estado
+    if ultima_fecha is None or fecha_actual > ultima_fecha:
 
-        except Exception:
-            continue
+        estado = actualizar_estado(
+            estado,
+            fecha_actual,
+            numero_cupon
+        )
 
-    if fechas:
-        return max(fechas)
+        guardar_estado(estado)
 
-    # Si no existe resultados.json o no contiene fechas,
-    # utilizamos la fecha del sistema.
-    return datetime.now().date()
+    else:
 
+        print(
+            "La fecha ya estaba procesada. "
+            "No se modifica el estado."
+        )
 
-# ============================================================
-# PROGRAMA PRINCIPAL
-# ============================================================
-
-def main():
-
-    fecha_actual = obtener_fecha_actual()
-
-    texto = generar_texto(fecha_actual)
+    # Generar informe
+    texto = generar_texto(
+        estado,
+        fecha_actual
+    )
 
     with open(
         SALIDA_FILE,
@@ -358,14 +569,10 @@ def main():
 
     print("")
     print("========================================")
-    print("     DEMORAS CSIF ONCE")
+    print("       CSIF ONCE - DEMORAS")
     print("========================================")
     print("")
     print(texto)
-    print("")
-    print(
-        f"Archivo generado: {SALIDA_FILE}"
-    )
 
 
 if __name__ == "__main__":
