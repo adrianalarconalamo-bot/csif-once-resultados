@@ -17,53 +17,110 @@ jobs:
 
     steps:
 
+      # =====================================================
+      # DESCARGAR REPOSITORIO
+      # =====================================================
+
       - name: Descargar repositorio
         uses: actions/checkout@v4
+
+      # =====================================================
+      # CONFIGURAR PYTHON
+      # =====================================================
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      # =====================================================
+      # INSTALAR DEPENDENCIAS
+      # =====================================================
+
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 lxml
 
+      # =====================================================
+      # GENERAR RESULTADOS ONCE
+      # =====================================================
+
       - name: Generar resultados ONCE
         run: |
           python generar_resultados.py
+
+      # =====================================================
+      # COMPROBAR RESULTADOS
+      # =====================================================
 
       - name: Comprobar resultados
         run: |
           python - <<'PY'
           import json
 
-          with open("resultados.json", "r", encoding="utf-8") as f:
+          with open(
+              "resultados.json",
+              "r",
+              encoding="utf-8"
+          ) as f:
               datos = json.load(f)
 
-          resultados = datos.get("resultados", [])
+          resultados = datos.get(
+              "resultados",
+              []
+          )
 
-          print("Resultados encontrados:", len(resultados))
+          print(
+              "Resultados encontrados:",
+              len(resultados)
+          )
 
           if not resultados:
               raise SystemExit(
                   "ERROR: resultados.json está vacío."
               )
 
-          for resultado in resultados[:20]:
+          for resultado in resultados[:30]:
+
               print(
                   resultado.get("tipo"),
                   "|",
                   resultado.get("fecha"),
                   "|",
-                  resultado.get("numero")
+                  resultado.get("numero"),
+                  "| serie:",
+                  resultado.get("serie")
               )
           PY
+
+      # =====================================================
+      # CALCULAR DEMORAS
+      # =====================================================
 
       - name: Calcular demoras
         run: |
           python calcular_demoras.py
+
+      # =====================================================
+      # COMPROBAR DEMORAS
+      # =====================================================
+
+      - name: Comprobar demoras
+        run: |
+          echo "========================================"
+          echo "       DEMORAS GENERADAS"
+          echo "========================================"
+          echo ""
+
+          cat demoras_texto.txt
+
+          echo ""
+          echo "========================================"
+
+      # =====================================================
+      # GENERAR MENSAJE CSIF Y ENVIAR TELEGRAM
+      # =====================================================
 
       - name: Generar mensaje CSIF INFORMA y enviar Telegram
         env:
@@ -71,6 +128,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python generar_whatsapp.py
+
+      # =====================================================
+      # ENVIAR INFORME DE DEMORAS A TELEGRAM
+      # =====================================================
 
       - name: Enviar informe de demoras a Telegram
         env:
@@ -88,16 +149,23 @@ jobs:
           ) as f:
               texto = f.read()
 
-          token = os.getenv("TELEGRAM_BOT_TOKEN")
-          chat_id = os.getenv("TELEGRAM_CHAT_ID")
+          token = os.getenv(
+              "TELEGRAM_BOT_TOKEN"
+          )
+
+          chat_id = os.getenv(
+              "TELEGRAM_CHAT_ID"
+          )
 
           if not token or not chat_id:
               raise SystemExit(
-                  "ERROR: faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID"
+                  "ERROR: faltan "
+                  "TELEGRAM_BOT_TOKEN "
+                  "o TELEGRAM_CHAT_ID"
               )
 
           url = (
-              f"https://api.telegram.org/"
+              "https://api.telegram.org/"
               f"bot{token}/sendMessage"
           )
 
@@ -112,8 +180,9 @@ jobs:
           )
 
           if not respuesta.ok:
+
               raise SystemExit(
-                  f"ERROR Telegram: "
+                  "ERROR Telegram: "
                   f"{respuesta.status_code} - "
                   f"{respuesta.text}"
               )
@@ -124,10 +193,15 @@ jobs:
           )
           PY
 
-      - name: Guardar resultados
+      # =====================================================
+      # GUARDAR TODOS LOS ARCHIVOS
+      # =====================================================
+
+      - name: Guardar resultados y estado
         run: |
 
-          git config user.name "github-actions[bot]"
+          git config user.name \
+            "github-actions[bot]"
 
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
@@ -136,7 +210,8 @@ jobs:
             resultados.json \
             whatsapp.txt \
             historial_cupones.json \
-            demoras_texto.txt
+            demoras_texto.txt \
+            demoras_estado.json
 
           if git diff --cached --quiet; then
 
