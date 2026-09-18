@@ -2,372 +2,358 @@ import json
 import os
 import requests
 
-
-# =========================
-# CONFIGURACIÓN TELEGRAM
-# =========================
-
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-
 if not TOKEN or not CHAT_ID:
-    raise SystemExit(
-        "ERROR: faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID"
-    )
+    raise SystemExit("ERROR: faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID")
 
-
-# =========================
-# CARGAR RESULTADOS
-# =========================
-
-with open(
-    "resultados.json",
-    "r",
-    encoding="utf-8"
-) as f:
+with open("resultados.json", "r", encoding="utf-8") as f:
     datos = json.load(f)
-
 
 resultados = datos.get("resultados", [])
 
-
 if not resultados:
-    raise SystemExit(
-        "ERROR: resultados.json está vacío."
-    )
-
-
-# =========================
-# AGRUPAR RESULTADOS
-# =========================
+    raise SystemExit("ERROR: resultados.json está vacío.")
 
 cupon_diario = None
 cuponazo = None
-
 sueldazo = []
-
 mi_dia = None
-
 triplex = []
 dupla = []
 super11 = []
-
 eurojackpot = None
 
 
+# ============================================================
+# AGRUPAR RESULTADOS
+# ============================================================
+
 for r in resultados:
 
-    tipo = str(
-        r.get("tipo", "")
-    ).upper().strip()
+    tipo = str(r.get("tipo", "")).upper().strip()
 
-
-    # CUPÓN DIARIO
     if "CUPÓN DIARIO" in tipo or "CUPON DIARIO" in tipo:
         cupon_diario = r
 
-
-    # CUPONAZO
-    elif "CUPONAZO" in tipo or "CUPONAZO" in tipo:
+    elif "CUPONAZO" in tipo:
         cuponazo = r
 
-
-    # SUELDAZO
     elif "SUELDAZO" in tipo:
         sueldazo.append(r)
 
-
-    # MI DÍA
     elif "MI DÍA" in tipo or "MI DIA" in tipo:
         mi_dia = r
 
-
-    # TRIPLEX
     elif "TRIPLEX" in tipo:
         triplex.append(r)
 
-
-    # DUPLA
     elif "DUPLA" in tipo:
         dupla.append(r)
 
-
-    # SUPER 11
     elif "SUPER 11" in tipo or "SUPERONCE" in tipo:
         super11.append(r)
 
-
-    # EUROJACKPOT
     elif "EUROJACKPOT" in tipo:
         eurojackpot = r
 
 
-# =========================
+# ============================================================
 # FECHA
-# =========================
+# ============================================================
 
-fecha = resultados[0].get(
-    "fecha",
-    ""
-)
+fecha = resultados[0].get("fecha", "")
 
-
-# =========================
-# CREAR MENSAJE
-# =========================
-
-lineas = []
-
-lineas.append("📢 CSIF INFORMA")
-lineas.append("")
-lineas.append("🎟️ RESULTADOS ONCE")
-lineas.append("")
+lineas = [
+    "📢 CSIF INFORMA",
+    "",
+    "🎟️ RESULTADOS ONCE",
+    "",
+]
 
 if fecha:
-    lineas.append(f"📅 {fecha}")
-    lineas.append("")
+    lineas += [
+        f"📅 {fecha}",
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # CUPÓN DIARIO
-# =========================
+# ============================================================
 
 if cupon_diario:
 
-    lineas.append("🎫 CUPÓN DIARIO")
+    lineas += [
+        "🎫 CUPÓN DIARIO",
+        "",
+        f"Número: {cupon_diario.get('numero', '—')}"
+    ]
 
-    numero = cupon_diario.get(
-        "numero",
-        "—"
-    )
-
-    serie = cupon_diario.get(
-        "serie",
-        ""
-    )
-
-    lineas.append(
-        f"Número: {numero}"
-    )
-
-    if serie:
+    if cupon_diario.get("serie"):
         lineas.append(
-            f"Serie: {serie}"
+            f"Serie: {cupon_diario['serie']}"
         )
 
-    lineas.append("")
+    lineas += [
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # CUPONAZO
-# =========================
+# ============================================================
 
 if cuponazo:
 
-    lineas.append("🎫 CUPONAZO")
+    lineas += [
+        "🎫 CUPONAZO",
+        "",
+        f"Número: {cuponazo.get('numero', '—')}"
+    ]
 
-    numero = cuponazo.get(
-        "numero",
-        "—"
-    )
-
-    serie = cuponazo.get(
-        "serie",
-        ""
-    )
-
-    lineas.append(
-        f"Número: {numero}"
-    )
-
-    if serie:
+    if cuponazo.get("serie"):
         lineas.append(
-            f"Serie: {serie}"
+            f"Serie: {cuponazo['serie']}"
         )
 
-    lineas.append("")
+    lineas += [
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # SUELDAZO
-# =========================
+# ============================================================
 
 for r in sueldazo:
 
-    lineas.append("💰 SUELDAZO")
+    lineas += [
+        "💰 SUELDAZO",
+        "",
+        f"Número: {r.get('numero', '—')}"
+    ]
 
-    numero = r.get(
-        "numero",
-        "—"
-    )
-
-    serie = r.get(
-        "serie",
-        ""
-    )
-
-    lineas.append(
-        f"Número: {numero}"
-    )
-
-    if serie:
+    if r.get("serie"):
         lineas.append(
-            f"Serie: {serie}"
+            f"Serie: {r['serie']}"
         )
 
-    lineas.append("")
+    lineas += [
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # EUROJACKPOT
-# =========================
+# ============================================================
 
 if eurojackpot:
 
-    lineas.append("🇪🇺 EUROJACKPOT")
+    lineas += [
+        "🇪🇺 EUROJACKPOT",
+        "",
+        f"Números: {eurojackpot.get('numero', '—')}"
+    ]
 
-    numero = eurojackpot.get(
-        "numero",
-        "—"
-    )
-
-    soles = eurojackpot.get(
-        "serie",
-        ""
-    )
-
-    lineas.append(
-        f"Números: {numero}"
-    )
-
-    if soles:
+    if eurojackpot.get("serie"):
         lineas.append(
-            f"Soles: {soles}"
+            f"Soles: {eurojackpot['serie']}"
         )
 
-    bote = eurojackpot.get(
-        "importebote",
-        ""
-    )
-
-    if bote:
+    if eurojackpot.get("importebote"):
         lineas.append(
-            f"💶 Bote: {bote} €"
+            f"💶 Bote: {eurojackpot['importebote']} €"
         )
 
-    lineas.append("")
+    lineas += [
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # MI DÍA
-# =========================
+# ============================================================
 
 if mi_dia:
 
-    lineas.append("📅 MI DÍA")
+    valor = str(
+        mi_dia.get("numero", "—")
+    ).strip()
 
-    numero = mi_dia.get(
-        "numero",
-        "—"
-    )
+    partes = valor.rsplit(" ", 1)
 
-    lineas.append(
-        f"Número: {numero}"
-    )
+    if len(partes) == 2:
+        fecha_mi_dia = partes[0]
+        numero_suerte = partes[1]
+    else:
+        fecha_mi_dia = valor
+        numero_suerte = "—"
 
-    lineas.append("")
+    lineas += [
+        "📅 MI DÍA",
+        "",
+        f"📆 {fecha_mi_dia}",
+        "",
+        f"🍀 Número de la suerte: {numero_suerte}",
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # TRIPLEX
-# =========================
+# ============================================================
 
 if triplex:
 
-    lineas.append("🔢 TRIPLEX")
+    lineas += [
+        "🔢 TRIPLEX",
+        ""
+    ]
 
-    for r in triplex:
+    for i, r in enumerate(triplex, 1):
 
         numero = r.get(
             "numero",
             "—"
         )
 
-        lineas.append(
-            f"• {numero}"
-        )
+        lineas += [
+            f"🎯 Sorteo {i}",
+            f"🔢 {numero}",
+            ""
+        ]
 
-    lineas.append("")
+    lineas += [
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # DUPLA
-# =========================
+# ============================================================
 
 if dupla:
 
-    lineas.append("🔢 DUPLA")
+    lineas += [
+        "🔢 DUPLA",
+        "",
+        "ℹ️ Números del 01 al 15",
+        ""
+    ]
 
-    for r in dupla:
+    for i, r in enumerate(dupla, 1):
 
-        numero = r.get(
-            "numero",
-            "—"
-        )
+        valor = str(
+            r.get("numero", "—")
+        ).strip()
 
-        lineas.append(
-            f"• {numero}"
-        )
+        try:
 
-    lineas.append("")
+            numero = int(valor)
+
+            if 1 <= numero <= 15:
+
+                anterior = (
+                    15 if numero == 1
+                    else numero - 1
+                )
+
+                posterior = (
+                    1 if numero == 15
+                    else numero + 1
+                )
+
+                premiado = f"{numero:02d}"
+                reintegro_anterior = f"{anterior:02d}"
+                reintegro_posterior = f"{posterior:02d}"
+
+            else:
+
+                premiado = valor
+                reintegro_anterior = "—"
+                reintegro_posterior = "—"
+
+        except ValueError:
+
+            premiado = valor
+            reintegro_anterior = "—"
+            reintegro_posterior = "—"
+
+        lineas += [
+            f"🎯 Sorteo {i}",
+            f"🏆 Número premiado: {premiado}",
+            f"🔄 Reintegro anterior: {reintegro_anterior}",
+            f"🔄 Reintegro posterior: {reintegro_posterior}",
+            ""
+        ]
+
+    lineas += [
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # SUPER 11
-# =========================
+# ============================================================
 
 if super11:
 
-    lineas.append("🔢 SUPER 11")
+    lineas += [
+        "🔢 SUPER 11",
+        ""
+    ]
 
-    for r in super11:
+    for i, r in enumerate(super11, 1):
 
         numero = r.get(
             "numero",
             "—"
         )
 
-        lineas.append(
-            f"• {numero}"
-        )
+        lineas += [
+            f"🎯 Sorteo {i}",
+            f"🔢 {numero}",
+            ""
+        ]
 
-    lineas.append("")
+    lineas += [
+        "━━━━━━━━━━━━━━━━━━",
+        ""
+    ]
 
 
-# =========================
+# ============================================================
 # PIE
-# =========================
+# ============================================================
 
-lineas.append(
-    "━━━━━━━━━━━━━━━━━━"
-)
-
-lineas.append(
-    "CSIF ONCE INFORMA"
-)
-
-lineas.append(
+lineas += [
+    "CSIF ONCE INFORMA",
     "Resultados oficiales ONCE"
-)
+]
 
 
-texto = "\n".join(lineas)
+texto = "\n".join(lineas).strip()
 
 
-# =========================
-# GUARDAR ARCHIVO
-# =========================
+# ============================================================
+# GUARDAR
+# ============================================================
 
 with open(
     "whatsapp.txt",
@@ -378,15 +364,14 @@ with open(
     f.write(texto)
 
 
-# =========================
-# ENVIAR TELEGRAM
-# =========================
+# ============================================================
+# TELEGRAM
+# ============================================================
 
 url = (
     f"https://api.telegram.org/"
     f"bot{TOKEN}/sendMessage"
 )
-
 
 respuesta = requests.post(
 
