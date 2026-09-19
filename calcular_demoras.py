@@ -5,48 +5,65 @@ RESULTADOS_FILE = "resultados.json"
 ESTADO_FILE = "demoras_estado.json"
 SALIDA_FILE = "demoras_texto.txt"
 
+
+# ============================================================
+# ESTADO INICIAL
+# Último estado conocido al finalizar el 18/09/2026
+# ============================================================
+
 ESTADO_INICIAL = {
     "ultima_fecha_procesada": "18/09/2026",
+
     "primeras": {
         "0": "10/08/2026",
-        "7": "11/08/2026",
-        "2": "04/09/2026",
         "1": "08/09/2026",
-        "6": "09/09/2026",
-        "9": "11/09/2026",
-        "5": "15/09/2026",
+        "2": "04/09/2026",
         "3": "16/09/2026",
+        "4": "18/09/2026",
+        "5": "15/09/2026",
+        "6": "09/09/2026",
+        "7": "11/08/2026",
         "8": "17/09/2026",
-        "4": "18/09/2026"
+        "9": "11/09/2026"
     },
+
     "terminaciones": {
-        "1": "24/08/2026",
-        "6": "27/08/2026",
         "0": "30/08/2026",
-        "7": "01/09/2026",
+        "1": "24/08/2026",
+        "2": "18/09/2026",
+        "3": "15/09/2026",
         "4": "07/09/2026",
         "5": "09/09/2026",
-        "9": "13/09/2026",
-        "3": "15/09/2026",
+        "6": "27/08/2026",
+        "7": "19/09/2026",
         "8": "17/09/2026",
-        "2": "18/09/2026"
+        "9": "13/09/2026"
     }
 }
 
 
+# ============================================================
+# CARGAR / GUARDAR ESTADO
+# ============================================================
+
 def cargar_estado():
     try:
-        with open(ESTADO_FILE, "r", encoding="utf-8") as f:
-            estado = json.load(f)
+        with open(ESTADO_FILE, "r", encoding="utf-8") as archivo:
+            estado = json.load(archivo)
 
-        estado.setdefault("primeras", ESTADO_INICIAL["primeras"].copy())
-        estado.setdefault(
-            "terminaciones",
-            ESTADO_INICIAL["terminaciones"].copy()
-        )
         estado.setdefault(
             "ultima_fecha_procesada",
             ESTADO_INICIAL["ultima_fecha_procesada"]
+        )
+
+        estado.setdefault(
+            "primeras",
+            ESTADO_INICIAL["primeras"].copy()
+        )
+
+        estado.setdefault(
+            "terminaciones",
+            ESTADO_INICIAL["terminaciones"].copy()
         )
 
         return estado
@@ -56,308 +73,526 @@ def cargar_estado():
 
 
 def guardar_estado(estado):
-    with open(ESTADO_FILE, "w", encoding="utf-8") as f:
-        json.dump(estado, f, ensure_ascii=False, indent=2)
+    with open(ESTADO_FILE, "w", encoding="utf-8") as archivo:
+        json.dump(
+            estado,
+            archivo,
+            ensure_ascii=False,
+            indent=2
+        )
 
 
-def fecha_desde_texto(texto):
+# ============================================================
+# FECHAS
+# ============================================================
+
+def convertir_fecha(texto):
     return datetime.strptime(texto, "%d/%m/%Y").date()
 
 
-def contar_dias_laborables(fecha_inicio, fecha_fin):
+def extraer_fecha(resultado):
     """
-    Cuenta días transcurridos de lunes a viernes.
-    El día de aparición cuenta como 00 días.
+    Extrae la fecha desde el campo 'fecha' de resultados.json.
+    Admite formatos del tipo:
+
+    'Cupón Diario, 19/09/2026'
+    '19/09/2026'
     """
-    if fecha_inicio >= fecha_fin:
-        return 0
 
-    dias = 0
-    actual = fecha_inicio + timedelta(days=1)
+    texto = str(resultado.get("fecha", "")).strip()
 
-    while actual <= fecha_fin:
-        if actual.weekday() < 5:
-            dias += 1
-        actual += timedelta(days=1)
+    partes = texto.replace("-", "/").split(",")
 
-    return dias
+    candidatos = []
 
+    for parte in partes:
+        parte = parte.strip()
 
-def contar_dias_naturales(fecha_inicio, fecha_fin):
-    """
-    Cuenta días transcurridos de lunes a domingo.
-    El día de aparición cuenta como 00 días.
-    """
-    if fecha_inicio >= fecha_fin:
-        return 0
+        try:
+            fecha = datetime.strptime(
+                parte,
+                "%d/%m/%Y"
+            ).date()
 
-    return (fecha_fin - fecha_inicio).days
+            candidatos.append(fecha)
+
+        except ValueError:
+            continue
+
+    if candidatos:
+        return max(candidatos)
+
+    return None
 
 
 def obtener_fecha_actual(resultados):
     """
-    Obtiene la fecha del sorteo actual desde resultados.json.
+    Utiliza la fecha más reciente disponible en resultados.json.
     """
-    hoy = date.today()
+
+    fechas = []
 
     for resultado in resultados:
-        fecha_texto = str(resultado.get("fecha", ""))
+        fecha = extraer_fecha(resultado)
 
-        partes = fecha_texto.split(",")
+        if fecha:
+            fechas.append(fecha)
 
-        if len(partes) >= 2:
-            posible_fecha = partes[1].strip()
+    if not fechas:
+        return date.today()
 
-            try:
-                fecha = datetime.strptime(
-                    posible_fecha,
-                    "%d/%m/%Y"
-                ).date()
-
-                if fecha == hoy:
-                    return fecha
-
-            except ValueError:
-                pass
-
-    return hoy
+    return max(fechas)
 
 
-def obtener_resultado_principal_del_dia(resultados, fecha_actual):
+# ============================================================
+# RESULTADO PRINCIPAL
+# ============================================================
+
+def obtener_resultado_principal(resultados, fecha_actual):
     """
     Entre semana:
         Cupón Diario / Cuponazo
 
     Fin de semana:
-        Sueldazo principal
+        Sueldazo
 
-    Los Sueldazos adicionales NO se consideran.
+    Se da prioridad al Cuponazo cuando existe.
     """
 
-    fecha_objetivo = fecha_actual.strftime("%d/%m/%Y")
-
-    if fecha_actual.weekday() < 5:
-        tipos_validos = (
-            "cupón diario",
-            "cupon diario",
-            "cuponazo"
-        )
-    else:
-        tipos_validos = (
-            "sueldazo",
-        )
+    candidatos = []
 
     for resultado in resultados:
-        tipo = str(resultado.get("tipo", "")).strip().lower()
-        fecha_texto = str(resultado.get("fecha", ""))
 
-        if fecha_objetivo not in fecha_texto:
+        fecha = extraer_fecha(resultado)
+
+        if fecha != fecha_actual:
             continue
 
-        if tipo in tipos_validos:
-            numero = str(resultado.get("numero", "")).strip()
+        tipo = str(
+            resultado.get("tipo", "")
+        ).strip().lower()
 
-            if numero.isdigit():
-                return numero, resultado.get("tipo", "")
+        numero = str(
+            resultado.get("numero", "")
+        ).strip()
 
-    return None, None
+        if not numero.isdigit():
+            continue
+
+        # Viernes: Cuponazo
+        if tipo in (
+            "cuponazo",
+            "cuponazo fin de semana"
+        ):
+            candidatos.append(
+                (3, numero, resultado.get("tipo", ""))
+            )
+
+        # Lunes a viernes: Cupón
+        elif tipo in (
+            "cupón diario",
+            "cupon diario",
+            "cupón",
+            "cupon"
+        ):
+            candidatos.append(
+                (2, numero, resultado.get("tipo", ""))
+            )
+
+        # Sábado y domingo: Sueldazo
+        elif tipo in (
+            "sueldazo",
+            "sueldazo fin de semana"
+        ):
+            candidatos.append(
+                (1, numero, resultado.get("tipo", ""))
+            )
+
+    if not candidatos:
+        return None, None
+
+    candidatos.sort(
+        key=lambda elemento: elemento[0],
+        reverse=True
+    )
+
+    _, numero, tipo = candidatos[0]
+
+    return numero.zfill(5), tipo
 
 
-def actualizar_estado(estado, numero, fecha_actual):
+# ============================================================
+# ACTUALIZAR ESTADO
+# ============================================================
+
+def actualizar_estado(
+    estado,
+    numero,
+    fecha_actual
+):
     """
-    Aplica las reglas de demora:
+    Actualiza:
 
-    Lunes-Viernes:
-        primera cifra -> se reinicia
-        terminación -> se reinicia
+    - Primera cifra: SOLO lunes-viernes.
+    - Terminación: TODOS los días.
 
-    Sábado-Domingo:
-        primera cifra -> NO se toca
-        terminación -> se reinicia
+    Una fecha ya procesada nunca vuelve a modificar el estado.
     """
-
-    if not numero or not numero.isdigit():
-        return
-
-    numero = numero.zfill(5)
-
-    primera_cifra = numero[0]
-    terminacion = numero[-1]
 
     fecha_texto = fecha_actual.strftime("%d/%m/%Y")
 
-    es_laborable = fecha_actual.weekday() < 5
+    ultima_fecha = estado.get(
+        "ultima_fecha_procesada"
+    )
 
-    # La terminación SIEMPRE se reinicia.
+    # Evita duplicar un mismo sorteo si GitHub Actions
+    # ejecuta el programa varias veces.
+    if ultima_fecha == fecha_texto:
+        print(
+            f"La fecha {fecha_texto} ya estaba procesada. "
+            "No se modifica el estado."
+        )
+        return False
+
+    numero = str(numero).zfill(5)
+
+    primera = numero[0]
+    terminacion = numero[-1]
+
+    # --------------------------------------------------------
+    # TERMINACIÓN
+    # Se actualiza TODOS los días.
+    # --------------------------------------------------------
+
     estado["terminaciones"][terminacion] = fecha_texto
 
-    # La primera cifra SOLO se reinicia de lunes a viernes.
-    if es_laborable:
-        estado["primeras"][primera_cifra] = fecha_texto
+    print(
+        f"Terminación {terminacion} actualizada: "
+        f"{fecha_texto}"
+    )
+
+    # --------------------------------------------------------
+    # PRIMERA CIFRA
+    # Solo lunes-viernes.
+    # --------------------------------------------------------
+
+    if fecha_actual.weekday() < 5:
+
+        estado["primeras"][primera] = fecha_texto
+
+        print(
+            f"Primera cifra {primera} actualizada: "
+            f"{fecha_texto}"
+        )
+
+    else:
+
+        print(
+            "Fin de semana: "
+            "la primera cifra NO se actualiza."
+        )
+
+    # Solo marcamos la fecha como procesada cuando
+    # realmente hemos aplicado un resultado.
+    estado["ultima_fecha_procesada"] = fecha_texto
+
+    return True
 
 
-def generar_lista_primeras(estado, fecha_actual):
+# ============================================================
+# CÁLCULO PRIMERAS CIFRAS
+# ============================================================
+
+def contar_dias_primeras(
+    fecha_salida,
+    fecha_actual
+):
+    """
+    Primera cifra:
+
+    - Solo lunes-viernes.
+    - El día de salida NO se cuenta.
+    - Se cuentan los días laborables posteriores
+      hasta la fecha actual.
+    """
+
+    if fecha_salida >= fecha_actual:
+        return 0
+
+    contador = 0
+    fecha = fecha_salida + timedelta(days=1)
+
+    while fecha <= fecha_actual:
+
+        if fecha.weekday() < 5:
+            contador += 1
+
+        fecha += timedelta(days=1)
+
+    return contador
+
+
+# ============================================================
+# CÁLCULO TERMINACIONES
+# ============================================================
+
+def contar_dias_terminaciones(
+    fecha_salida,
+    fecha_actual
+):
+    """
+    Terminaciones:
+
+    - Se cuentan todos los días naturales.
+    - Lunes a domingo.
+    - El día de salida NO se cuenta.
+    """
+
+    if fecha_salida >= fecha_actual:
+        return 0
+
+    return (
+        fecha_actual - fecha_salida
+    ).days
+
+
+# ============================================================
+# GENERAR PRIMERAS CIFRAS
+# ============================================================
+
+def generar_primeras(
+    estado,
+    fecha_actual
+):
     lineas = []
 
     for numero in range(10):
+
         digito = str(numero)
-        fecha_ultima = fecha_desde_texto(
+
+        fecha_salida = convertir_fecha(
             estado["primeras"][digito]
         )
 
-        demora = contar_dias_laborables(
-            fecha_ultima,
+        demora = contar_dias_primeras(
+            fecha_salida,
             fecha_actual
         )
 
+        palabra = "día" if demora == 1 else "días"
+
         lineas.append(
-            f"{digito}️⃣ {demora:02d} días"
+            f"{digito} {estado['primeras'][digito]} "
+            f"{demora:02d} {palabra}"
         )
 
     return lineas
 
 
-def generar_lista_terminaciones(estado, fecha_actual):
+# ============================================================
+# GENERAR TERMINACIONES
+# ============================================================
+
+def generar_terminaciones(
+    estado,
+    fecha_actual
+):
     lineas = []
 
     for numero in range(10):
+
         digito = str(numero)
-        fecha_ultima = fecha_desde_texto(
+
+        fecha_salida = convertir_fecha(
             estado["terminaciones"][digito]
         )
 
-        demora = contar_dias_naturales(
-            fecha_ultima,
+        demora = contar_dias_terminaciones(
+            fecha_salida,
             fecha_actual
         )
 
+        palabra = "día" if demora == 1 else "días"
+
         lineas.append(
-            f"{digito}️⃣ {demora:02d} días"
+            f"{digito} {estado['terminaciones'][digito]} "
+            f"{demora:02d} {palabra}"
         )
 
     return lineas
 
 
-def generar_mensaje(estado, fecha_actual):
-    fecha_texto = fecha_actual.strftime("%d/%m/%Y")
+# ============================================================
+# GENERAR MENSAJE
+# ============================================================
+
+def generar_mensaje(
+    estado,
+    fecha_actual
+):
+
+    fecha_texto = fecha_actual.strftime(
+        "%d/%m/%Y"
+    )
 
     lineas = [
-        "📊 DEMORAS ONCE",
+
+        f"{fecha_texto}",
+
         "",
-        f"📅 {fecha_texto}",
-        "",
-        "━━━━━━━━━━━━━━━━━━",
-        "",
+
         "*Demora el reintegro de las primeras cifras del cupón*",
-        "",
-        "🎯 Sorteo  Lunes a Viernes",
-        "",
-        "La primera cifra solo se contabiliza de lunes a viernes.",
-        "Los sábados y domingos no suman días ni reinician la primera cifra.",
-        ""
-    ]
 
-    lineas.extend(generar_lista_primeras(estado, fecha_actual))
+        "Sorteo  Lunes a Viernes",
 
-    lineas += [
-        "",
-        "━━━━━━━━━━━━━━━━━━",
-        "",
-        "*Demora las terminaciones del cupón*",
-        "",
-        "🎯 Sorteo  Lunes a Domingo",
-        "",
-        "La terminación se contabiliza todos los días.",
-        "Los sábados y domingos también cuentan.",
         ""
     ]
 
     lineas.extend(
-        generar_lista_terminaciones(
+        generar_primeras(
             estado,
             fecha_actual
         )
     )
 
-    lineas += [
+    lineas.extend([
+
         "",
-        "━━━━━━━━━━━━━━━━━━",
+
+        "Hola la primera cifra solo se cuenta de lunes a viernes,",
+
+        "(_*el sábado y domingo no hay reintegro y esos días no se cuentan. )*_",
+
         "",
+
+        "*Demora las terminaciones*",
+
+        "*del cupón*",
+
+        ""
+    ])
+
+    lineas.extend(
+        generar_terminaciones(
+            estado,
+            fecha_actual
+        )
+    )
+
+    lineas.extend([
+
+        "",
+
         "CSIF ONCE",
+
         "ESTAMOS POR TI",
+
         "TEL: *652338627*",
-        "",
-        "*Buenas noches*"
-    ]
+
+        "*Buenas noches *"
+    ])
 
     return "\n".join(lineas)
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
+
+    # --------------------------------------------------------
+    # Cargar resultados
+    # --------------------------------------------------------
+
     try:
-        with open(RESULTADOS_FILE, "r", encoding="utf-8") as f:
-            datos = json.load(f)
+
+        with open(
+            RESULTADOS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as archivo:
+
+            datos = json.load(archivo)
 
     except FileNotFoundError:
+
         raise SystemExit(
             "ERROR: no existe resultados.json"
         )
 
-    resultados = datos.get("resultados", [])
+    resultados = datos.get(
+        "resultados",
+        []
+    )
 
     if not resultados:
+
         raise SystemExit(
             "ERROR: resultados.json está vacío."
         )
 
+    # --------------------------------------------------------
+    # Cargar estado
+    # --------------------------------------------------------
+
     estado = cargar_estado()
 
-    fecha_actual = obtener_fecha_actual(resultados)
+    # --------------------------------------------------------
+    # Determinar fecha actual
+    # --------------------------------------------------------
 
-    numero, tipo = obtener_resultado_principal_del_dia(
+    fecha_actual = obtener_fecha_actual(
+        resultados
+    )
+
+    print(
+        f"Fecha de trabajo: "
+        f"{fecha_actual.strftime('%d/%m/%Y')}"
+    )
+
+    # --------------------------------------------------------
+    # Buscar resultado principal
+    # --------------------------------------------------------
+
+    numero, tipo = obtener_resultado_principal(
         resultados,
         fecha_actual
     )
 
     if numero:
+
+        print(
+            f"Resultado principal: "
+            f"{numero} ({tipo})"
+        )
+
         actualizar_estado(
             estado,
             numero,
             fecha_actual
         )
 
-        print(
-            f"Resultado principal del día: "
-            f"{numero} ({tipo})"
-        )
-
-        if fecha_actual.weekday() < 5:
-            print(
-                "Primera cifra actualizada: "
-                f"{numero[0]}"
-            )
-        else:
-            print(
-                "Fin de semana: "
-                "la primera cifra NO se actualiza."
-            )
-
-        print(
-            "Terminación actualizada: "
-            f"{numero[-1]}"
-        )
-
     else:
+
         print(
-            "AVISO: todavía no se ha encontrado "
+            "AVISO: todavía no existe "
             "el resultado principal del día."
         )
 
-    estado["ultima_fecha_procesada"] = (
-        fecha_actual.strftime("%d/%m/%Y")
-    )
+        print(
+            "El estado NO se modifica."
+        )
+
+    # --------------------------------------------------------
+    # Guardar estado
+    # --------------------------------------------------------
 
     guardar_estado(estado)
+
+    # --------------------------------------------------------
+    # Generar texto
+    # --------------------------------------------------------
 
     mensaje = generar_mensaje(
         estado,
@@ -368,8 +603,9 @@ def main():
         SALIDA_FILE,
         "w",
         encoding="utf-8"
-    ) as f:
-        f.write(mensaje)
+    ) as archivo:
+
+        archivo.write(mensaje)
 
     print(
         "demoras_texto.txt generado correctamente."
