@@ -2,7 +2,6 @@ import json
 import re
 import html
 import urllib.request
-import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -89,6 +88,7 @@ def texto_html(contenido):
         texto = str(contenido)
 
     texto = html.unescape(texto)
+
     texto = re.sub(
         r"<script\b[^>]*>.*?</script>",
         " ",
@@ -482,10 +482,7 @@ def obtener_resultados_rss():
 # CUPONES DESDE WEB OFICIAL
 # ==========================================================
 
-def extraer_cupon_desde_web(
-    tipo,
-    url
-):
+def extraer_cupon_desde_web(tipo, url):
 
     contenido = descargar_url(
         url
@@ -505,15 +502,12 @@ def extraer_cupon_desde_web(
         if "cuponazo" not in texto_lower:
             return None
 
-    elif tipo == "Sueldazo":
-
-        if "sueldazo" not in texto_lower:
-            return None
-
     elif tipo == "Cupón Diario":
 
-        if "cupón diario" not in texto_lower and \
-           "cupon diario" not in texto_lower:
+        if (
+            "cupón diario" not in texto_lower
+            and "cupon diario" not in texto_lower
+        ):
             return None
 
     fecha = extraer_fecha(
@@ -521,14 +515,13 @@ def extraer_cupon_desde_web(
     )
 
     if not fecha:
+
         print(
             f"AVISO: no se encontró fecha "
             f"para {tipo}"
         )
-        return None
 
-    # Buscamos primero el patrón oficial:
-    # Número: 12345, serie: 123
+        return None
 
     patron = re.search(
         r"Número\s*[:\-]?\s*"
@@ -564,10 +557,6 @@ def extraer_cupon_desde_web(
     numero = patron.group(1)
     serie = patron.group(2)
 
-    dia = fecha.strftime(
-        "%d/%m/%Y"
-    )
-
     dias = [
         "lunes",
         "martes",
@@ -578,13 +567,9 @@ def extraer_cupon_desde_web(
         "domingo",
     ]
 
-    dia_semana = dias[
-        fecha.weekday()
-    ]
-
     fecha_formateada = (
-        f"{dia_semana.capitalize()}, "
-        f"{dia}"
+        f"{dias[fecha.weekday()].capitalize()}, "
+        f"{fecha.strftime('%d/%m/%Y')}"
     )
 
     resultado = {
@@ -607,6 +592,162 @@ def extraer_cupon_desde_web(
 
 
 # ==========================================================
+# SUELDAZO FIN DE SEMANA
+# ==========================================================
+
+def extraer_sueldazo_desde_web(url):
+
+    contenido = descargar_url(
+        url
+    )
+
+    if not contenido:
+        return []
+
+    texto = texto_html(
+        contenido
+    )
+
+    if "sueldazo" not in texto.lower():
+
+        print(
+            "AVISO: la página no contiene "
+            "información del Sueldazo."
+        )
+
+        return []
+
+    fecha = extraer_fecha(
+        texto
+    )
+
+    if not fecha:
+
+        print(
+            "AVISO: no se encontró "
+            "la fecha del Sueldazo."
+        )
+
+        return []
+
+    dias = [
+        "lunes",
+        "martes",
+        "miércoles",
+        "jueves",
+        "viernes",
+        "sábado",
+        "domingo",
+    ]
+
+    fecha_formateada = (
+        f"{dias[fecha.weekday()].capitalize()}, "
+        f"{fecha.strftime('%d/%m/%Y')}"
+    )
+
+    resultados = []
+
+    # ------------------------------------------------------
+    # BUSCAR TODAS LAS PAREJAS NÚMERO + SERIE
+    # ------------------------------------------------------
+
+    patrones = [
+        r"N[uú]mero\s*[:\-]?\s*"
+        r"([0-9]{5})"
+        r".{0,150}?"
+        r"Serie\s*[:\-]?\s*"
+        r"([0-9]{3})",
+
+        r"N[uú]mero\s+"
+        r"([0-9]{5})"
+        r".{0,150}?"
+        r"Serie\s+"
+        r"([0-9]{3})",
+    ]
+
+    parejas = []
+
+    for patron in patrones:
+
+        encontradas = re.findall(
+            patron,
+            texto,
+            re.IGNORECASE
+        )
+
+        for numero, serie in encontradas:
+
+            pareja = (
+                numero,
+                serie
+            )
+
+            if pareja not in parejas:
+                parejas.append(pareja)
+
+    # ------------------------------------------------------
+    # SI LA PÁGINA DEVUELVE LAS CINCO PAREJAS,
+    # LA PRIMERA ES EL PREMIO PRINCIPAL
+    # Y LAS CUATRO SIGUIENTES SON LOS ADICIONALES.
+    # ------------------------------------------------------
+
+    if len(parejas) >= 1:
+
+        numero_principal, serie_principal = parejas[0]
+
+        resultados.append({
+            "tipo": "Sueldazo",
+            "fecha": fecha_formateada,
+            "numero": numero_principal,
+            "serie": serie_principal,
+            "importebote": "0"
+        })
+
+        print(
+            f"✓ SUELDAZO PRINCIPAL: "
+            f"{numero_principal} | "
+            f"serie {serie_principal}"
+        )
+
+    else:
+
+        print(
+            "AVISO: no se encontró "
+            "el número principal del Sueldazo."
+        )
+
+    # ------------------------------------------------------
+    # CUATRO PREMIOS ADICIONALES
+    # ------------------------------------------------------
+
+    for numero, serie in parejas[1:5]:
+
+        resultados.append({
+            "tipo": "Sueldazo adicional",
+            "fecha": fecha_formateada,
+            "numero": numero,
+            "serie": serie,
+            "importebote": "0"
+        })
+
+        print(
+            f"✓ SUELDAZO ADICIONAL: "
+            f"{numero} | "
+            f"serie {serie}"
+        )
+
+    if len(parejas) < 5:
+
+        print(
+            "AVISO: el Sueldazo ha devuelto "
+            f"{len(parejas)} parejas "
+            "número/serie; se esperaban 5."
+        )
+
+    return resultados
+
+
+# ==========================================================
 # OBTENER ÚLTIMO CUPÓN DISPONIBLE
 # ==========================================================
 
@@ -623,14 +764,13 @@ def obtener_cupones_oficiales():
             "https://www.juegosonce.es/"
             "resultados-cuponazo"
         ),
-        (
-            "Sueldazo",
-            "https://www.juegosonce.es/"
-            "resultados-sueldazo-fin-de-semana"
-        ),
     ]
 
     resultados = []
+
+    # ------------------------------------------------------
+    # CUPÓN DIARIO Y CUPONAZO
+    # ------------------------------------------------------
 
     for tipo, url in paginas:
 
@@ -640,9 +780,29 @@ def obtener_cupones_oficiales():
         )
 
         if resultado:
+
             resultados.append(
                 resultado
             )
+
+    # ------------------------------------------------------
+    # SUELDAZO FIN DE SEMANA
+    # ------------------------------------------------------
+
+    url_sueldazo = (
+        "https://www.juegosonce.es/"
+        "resultados-sueldazo-fin-de-semana"
+    )
+
+    resultados_sueldazo = (
+        extraer_sueldazo_desde_web(
+            url_sueldazo
+        )
+    )
+
+    resultados.extend(
+        resultados_sueldazo
+    )
 
     return resultados
 
@@ -681,6 +841,7 @@ def combinar_resultados(
             clave_resultado(x) == clave
             for x in todos
         ):
+
             todos.append(
                 resultado
             )
@@ -708,11 +869,13 @@ def filtrar_fecha_reciente(
         )
 
         if fecha:
+
             fechas.append(
                 fecha
             )
 
     if not fechas:
+
         raise RuntimeError(
             "No se pudo determinar "
             "ninguna fecha."
@@ -756,6 +919,7 @@ def guardar_resultados(
 ):
 
     if not resultados:
+
         raise RuntimeError(
             "No hay resultados para guardar."
         )
@@ -812,9 +976,11 @@ def main():
     print(
         "=========================================="
     )
+
     print(
         "   ACTUALIZADOR RESULTADOS ONCE"
     )
+
     print(
         "=========================================="
     )
