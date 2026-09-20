@@ -4,7 +4,13 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "30 19 * * *"
+    # Comprobaciones cada 5 minutos.
+    # GitHub trabaja en UTC.
+    #
+    # El programa controla internamente la hora española
+    # para no enviar antes de las 21:30.
+    - cron: "30-55/5 19 * * *"
+    - cron: "*/5 20-23 * * *"
 
 jobs:
 
@@ -81,7 +87,7 @@ jobs:
                   "ERROR: resultados.json está vacío."
               )
 
-          for resultado in resultados[:30]:
+          for resultado in resultados[:50]:
 
               print(
                   resultado.get("tipo"),
@@ -119,10 +125,13 @@ jobs:
           echo "========================================"
 
       # =====================================================
-      # GENERAR MENSAJE CSIF Y ENVIAR TELEGRAM
+      # GENERAR Y ENVIAR RESULTADOS
+      #
+      # Este programa NO envía nada hasta que comprueba
+      # que todos los sorteos esperados están disponibles.
       # =====================================================
 
-      - name: Generar mensaje CSIF INFORMA y enviar Telegram
+      - name: Comprobar y enviar resultados CSIF
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -130,24 +139,80 @@ jobs:
           python generar_whatsapp.py
 
       # =====================================================
-      # ENVIAR INFORME DE DEMORAS A TELEGRAM
+      # ENVIAR DEMORAS SOLO DESPUÉS DE HABER ENVIADO
+      # CORRECTAMENTE LOS RESULTADOS
       # =====================================================
 
-      - name: Enviar informe de demoras a Telegram
+      - name: Enviar informe de demoras
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python - <<'PY'
           import os
+          import json
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
           import requests
 
-          with open(
-              "demoras_texto.txt",
-              "r",
-              encoding="utf-8"
-          ) as f:
-              texto = f.read()
+          HOY = datetime.now(
+              ZoneInfo("Europe/Madrid")
+          ).strftime("%d/%m/%Y")
+
+          # -------------------------------------------------
+          # COMPROBAR QUE LOS RESULTADOS YA FUERON ENVIADOS
+          # -------------------------------------------------
+
+          try:
+
+              with open(
+                  "telegram_enviado.json",
+                  "r",
+                  encoding="utf-8"
+              ) as f:
+                  estado = json.load(f)
+
+          except FileNotFoundError:
+
+              print(
+                  "Los resultados todavía no han sido enviados."
+              )
+              raise SystemExit(0)
+
+          if estado.get("fecha") != HOY:
+
+              print(
+                  "El estado no corresponde al día de hoy."
+              )
+              raise SystemExit(0)
+
+          # -------------------------------------------------
+          # EVITAR DUPLICAR LAS DEMORAS
+          # -------------------------------------------------
+
+          try:
+
+              with open(
+                  "demoras_enviadas.json",
+                  "r",
+                  encoding="utf-8"
+              ) as f:
+                  estado_demoras = json.load(f)
+
+          except FileNotFoundError:
+
+              estado_demoras = {}
+
+          if estado_demoras.get("fecha") == HOY:
+
+              print(
+                  "Las demoras de hoy ya fueron enviadas."
+              )
+              raise SystemExit(0)
+
+          # -------------------------------------------------
+          # CREDENCIALES
+          # -------------------------------------------------
 
           token = os.getenv(
               "TELEGRAM_BOT_TOKEN"
@@ -158,11 +223,33 @@ jobs:
           )
 
           if not token or not chat_id:
+
               raise SystemExit(
                   "ERROR: faltan "
                   "TELEGRAM_BOT_TOKEN "
                   "o TELEGRAM_CHAT_ID"
               )
+
+          # -------------------------------------------------
+          # LEER DEMORAS
+          # -------------------------------------------------
+
+          with open(
+              "demoras_texto.txt",
+              "r",
+              encoding="utf-8"
+          ) as f:
+              texto = f.read().strip()
+
+          if not texto:
+
+              raise SystemExit(
+                  "ERROR: demoras_texto.txt está vacío."
+              )
+
+          # -------------------------------------------------
+          # ENVIAR TELEGRAM
+          # -------------------------------------------------
 
           url = (
               "https://api.telegram.org/"
@@ -187,9 +274,27 @@ jobs:
                   f"{respuesta.text}"
               )
 
+          # -------------------------------------------------
+          # MARCAR DEMORAS COMO ENVIADAS
+          # -------------------------------------------------
+
+          with open(
+              "demoras_enviadas.json",
+              "w",
+              encoding="utf-8"
+          ) as f:
+
+              json.dump(
+                  {
+                      "fecha": HOY
+                  },
+                  f,
+                  ensure_ascii=False,
+                  indent=2
+              )
+
           print(
-              "Informe de demoras enviado "
-              "correctamente a Telegram."
+              "Informe de demoras enviado correctamente."
           )
           PY
 
@@ -211,7 +316,9 @@ jobs:
             whatsapp.txt \
             historial_cupones.json \
             demoras_texto.txt \
-            demoras_estado.json
+            demoras_estado.json \
+            telegram_enviado.json \
+            demoras_enviadas.json
 
           if git diff --cached --quiet; then
 
@@ -220,7 +327,7 @@ jobs:
           else
 
             git commit \
-              -m "Actualizar resultados y demoras ONCE"
+              -m "Actualizar resultados, demoras y estados ONCE"
 
             git push
 
