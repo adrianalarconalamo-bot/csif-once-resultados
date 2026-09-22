@@ -1,5 +1,5 @@
 {
-  "actualizado": "22/09/2026 21:39",
+  "actualizado": "22/09/2026 21:50",
   "resultados": [
     {
       "tipo": "Cupón Diario",
@@ -49,6 +49,13 @@
       "numero": "05 OCT 1979 02",
       "serie": "",
       "importebote": "0"
+    },
+    {
+      "tipo": "Eurojackpot",
+      "fecha": "Martes, 22/09/2026",
+      "numero": "17,23,33,46,47",
+      "serie": "04,05",
+      "importebote": "80000000"
     },
     {
       "tipo": "Dupla de la ONCE",
