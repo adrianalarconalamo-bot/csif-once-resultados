@@ -271,10 +271,12 @@ if mi_dia is None:
 
 
 # ------------------------------------------------------------
-# LUNES A VIERNES
+# LUNES A JUEVES
 # ------------------------------------------------------------
+# El Cupón Diario se celebra de lunes a jueves.
+# El viernes corresponde el Cuponazo.
 
-if DIA_SEMANA <= 4:
+if DIA_SEMANA <= 3:
 
     if cupon_diario is None:
 
@@ -341,6 +343,7 @@ if faltan:
     print("")
     print("⏳ RESULTADOS TODAVÍA INCOMPLETOS")
     print("")
+
     print(
         "Todavía faltan:"
     )
@@ -352,6 +355,7 @@ if faltan:
         )
 
     print("")
+
     print(
         "Se volverá a comprobar en 5 minutos."
     )
@@ -365,9 +369,11 @@ if faltan:
 
 print("")
 print("✅ TODOS LOS RESULTADOS DISPONIBLES")
+
 print(
     f"📅 {HOY}"
 )
+
 print("")
 
 
@@ -390,6 +396,7 @@ lineas = [
     "🎟️✨ RESULTADOS ONCE ✨",
 
     ""
+
 ]
 
 
@@ -404,6 +411,7 @@ if fecha:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -421,6 +429,7 @@ if cupon_diario:
 
         f"🔢 Número: "
         f"{cupon_diario.get('numero', '—')}"
+
     ]
 
 
@@ -439,6 +448,7 @@ if cupon_diario:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -456,6 +466,7 @@ if cuponazo:
 
         f"🔢 Número: "
         f"{cuponazo.get('numero', '—')}"
+
     ]
 
 
@@ -474,6 +485,7 @@ if cuponazo:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -491,6 +503,7 @@ if (
         "💰🌟 SUELDAZO FIN DE SEMANA",
 
         ""
+
     ]
 
 
@@ -504,6 +517,7 @@ if (
 
             f"🔢 Número: "
             f"{sueldazo_principal.get('numero', '—')}"
+
         ]
 
 
@@ -522,6 +536,7 @@ if (
             "💶 2.000 € al mes durante 10 años",
 
             ""
+
         ]
 
 
@@ -532,6 +547,7 @@ if (
             "🎁 PREMIOS ADICIONALES",
 
             ""
+
         ]
 
 
@@ -568,6 +584,7 @@ if (
             "━━━━━━━━━━━━━━━━━━",
 
             ""
+
         ]
 
 
@@ -585,6 +602,7 @@ if eurojackpot:
 
         f"🔢 Números: "
         f"{eurojackpot.get('numero', '—')}"
+
     ]
 
 
@@ -621,6 +639,7 @@ if eurojackpot:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -675,6 +694,7 @@ if mi_dia:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -689,6 +709,7 @@ if triplex:
         "🔵🎯 TRIPLEX",
 
         ""
+
     ]
 
 
@@ -708,6 +729,7 @@ if triplex:
             f"🎲 Sorteo {i}: {numero}",
 
             ""
+
         ]
 
 
@@ -716,6 +738,7 @@ if triplex:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -734,6 +757,7 @@ if dupla:
         "ℹ️ Números del 01 al 15",
 
         ""
+
     ]
 
 
@@ -815,6 +839,7 @@ if dupla:
             f"{reintegro_posterior}",
 
             ""
+
         ]
 
 
@@ -823,6 +848,7 @@ if dupla:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -837,6 +863,7 @@ if super11:
         "🔴🔥 SUPER 11",
 
         ""
+
     ]
 
 
@@ -858,6 +885,7 @@ if super11:
             f"🔢 {numero}",
 
             ""
+
         ]
 
 
@@ -869,6 +897,7 @@ if super11:
         "━━━━━━━━━━━━━━━━━━",
 
         ""
+
     ]
 
 
@@ -893,6 +922,7 @@ lineas += [
     "",
 
     "CSIF, todo por todos."
+
 ]
 
 
@@ -937,9 +967,11 @@ try:
             "text": texto,
 
             "disable_web_page_preview": True
+
         },
 
         timeout=15
+
     )
 
 
@@ -972,11 +1004,13 @@ with open(
     json.dump(
 
         {
+
             "fecha": HOY,
 
             "hora": AHORA.strftime(
                 "%H:%M:%S"
             )
+
         },
 
         f,
@@ -984,6 +1018,7 @@ with open(
         ensure_ascii=False,
 
         indent=2
+
     )
 
 
