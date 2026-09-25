@@ -1,122 +1,129 @@
 {
-  "actualizado": "25/09/2026 01:55",
+  "actualizado": "25/09/2026 21:39",
   "resultados": [
     {
-      "tipo": "Cupón Diario",
-      "fecha": "Jueves, 24/09/2026",
-      "numero": "35972",
-      "serie": "044",
-      "importebote": "0"
-    },
-    {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 1",
-      "numero": "323",
+      "fecha": "Viernes, 25/09/2026, Sorteo 1",
+      "numero": "355",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 2",
-      "numero": "203",
+      "fecha": "Viernes, 25/09/2026, Sorteo 2",
+      "numero": "226",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 3",
-      "numero": "101",
+      "fecha": "Viernes, 25/09/2026, Sorteo 3",
+      "numero": "133",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 4",
-      "numero": "038",
+      "fecha": "Viernes, 25/09/2026, Sorteo 4",
+      "numero": "275",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 5",
-      "numero": "047",
+      "fecha": "Viernes, 25/09/2026, Sorteo 5",
+      "numero": "660",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Mi Día",
-      "fecha": "Jueves, 24/09/2026",
-      "numero": "26 ABR 2006 05",
+      "fecha": "Viernes, 25/09/2026",
+      "numero": "20 MAY 2020 08",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Eurojackpot",
+      "fecha": "Viernes, 25/09/2026",
+      "numero": "02,07,10,29,30",
+      "serie": "05,10",
+      "importebote": "91000000"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Viernes, 25/09/2026, Sorteo 1",
+      "numero": "09",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 1",
+      "fecha": "Viernes, 25/09/2026, Sorteo 2",
+      "numero": "13",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Viernes, 25/09/2026, Sorteo 3",
       "numero": "10",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 2",
-      "numero": "11",
+      "fecha": "Viernes, 25/09/2026, Sorteo 4",
+      "numero": "13",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 3",
+      "fecha": "Viernes, 25/09/2026, Sorteo 5",
       "numero": "03",
       "serie": "",
       "importebote": "0"
     },
     {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 4",
-      "numero": "15",
-      "serie": "",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Jueves, 24/09/2026, Sorteo 5",
-      "numero": "12",
-      "serie": "",
+      "tipo": "Cuponazo",
+      "fecha": "Viernes, 25/09/2026",
+      "numero": "12061",
+      "serie": "093",
       "importebote": "0"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Jueves, 24/09/2026, Sorteo 1",
-      "numero": "01,08,10,13,20,28,32,36,42,46,47,49,53,56,59,60,64,67,81,85",
+      "fecha": "Viernes, 25/09/2026, Sorteo 1",
+      "numero": "01,12,15,18,23,28,30,31,36,37,42,48,49,51,55,60,72,73,83,84",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Jueves, 24/09/2026, Sorteo 2",
-      "numero": "03,08,10,11,23,24,29,35,39,41,47,52,53,54,56,59,62,66,67,81",
+      "fecha": "Viernes, 25/09/2026, Sorteo 2",
+      "numero": "03,19,21,22,23,24,25,32,36,41,44,48,58,62,64,71,73,75,78,80",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Jueves, 24/09/2026, Sorteo 3",
-      "numero": "03,05,10,11,13,19,22,26,31,33,37,47,52,55,56,57,67,68,75,77",
+      "fecha": "Viernes, 25/09/2026, Sorteo 3",
+      "numero": "01,03,09,17,20,22,29,31,39,48,50,51,57,59,61,65,69,71,75,84",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Jueves, 24/09/2026, Sorteo 4",
-      "numero": "04,06,08,11,13,16,17,18,34,39,41,48,50,57,59,61,62,66,69,73",
+      "fecha": "Viernes, 25/09/2026, Sorteo 4",
+      "numero": "07,09,10,14,20,21,22,25,29,30,38,41,43,44,53,57,58,64,71,75",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Jueves, 24/09/2026, Sorteo 5",
-      "numero": "07,17,19,29,30,43,49,51,52,55,56,60,62,63,64,73,76,78,80,85",
+      "fecha": "Viernes, 25/09/2026, Sorteo 5",
+      "numero": "05,09,11,13,20,22,23,25,28,31,37,38,48,53,64,67,73,75,77,83",
       "serie": "",
       "importebote": "1000000"
     }
