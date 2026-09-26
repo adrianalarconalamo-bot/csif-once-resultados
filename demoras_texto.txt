@@ -21,7 +21,7 @@ Hola la primera cifra solo se cuenta de lunes a viernes,
 *del cupón*
 
 0 22/09/2026 04 días
-1 25/09/2026 01 día
+1 26/09/2026 00 días
 2 24/09/2026 02 días
 3 20/09/2026 06 días
 4 07/09/2026 19 días

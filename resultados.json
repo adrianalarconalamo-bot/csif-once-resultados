@@ -1,5 +1,5 @@
 {
-  "actualizado": "26/09/2026 21:37",
+  "actualizado": "26/09/2026 21:48",
   "resultados": [
     {
       "tipo": "Triplex de la ONCE",
@@ -112,6 +112,41 @@
       "numero": "02,06,07,08,17,18,25,26,31,38,44,47,48,57,66,68,71,73,75,79",
       "serie": "",
       "importebote": "1000000"
+    },
+    {
+      "tipo": "Sueldazo",
+      "fecha": "Sábado, 26/09/2026",
+      "numero": "94011",
+      "serie": "005",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Sueldazo adicional",
+      "fecha": "Sábado, 26/09/2026",
+      "numero": "04424",
+      "serie": "006",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Sueldazo adicional",
+      "fecha": "Sábado, 26/09/2026",
+      "numero": "78138",
+      "serie": "055",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Sueldazo adicional",
+      "fecha": "Sábado, 26/09/2026",
+      "numero": "85156",
+      "serie": "009",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Sueldazo adicional",
+      "fecha": "Sábado, 26/09/2026",
+      "numero": "86575",
+      "serie": "018",
+      "importebote": "0"
     }
   ]
 }
