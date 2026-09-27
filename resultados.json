@@ -1,152 +1,117 @@
 {
-  "actualizado": "27/09/2026 01:58",
+  "actualizado": "27/09/2026 21:38",
   "resultados": [
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 1",
-      "numero": "461",
+      "fecha": "Domingo, 27/09/2026, Sorteo 1",
+      "numero": "318",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 2",
-      "numero": "673",
+      "fecha": "Domingo, 27/09/2026, Sorteo 2",
+      "numero": "745",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 3",
-      "numero": "949",
+      "fecha": "Domingo, 27/09/2026, Sorteo 3",
+      "numero": "103",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 4",
-      "numero": "468",
+      "fecha": "Domingo, 27/09/2026, Sorteo 4",
+      "numero": "499",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 5",
-      "numero": "261",
+      "fecha": "Domingo, 27/09/2026, Sorteo 5",
+      "numero": "937",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Mi Día",
-      "fecha": "Sábado, 26/09/2026",
-      "numero": "19 ENE 2008 08",
+      "fecha": "Domingo, 27/09/2026",
+      "numero": "12 JUN 1969 02",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 1",
-      "numero": "03",
-      "serie": "",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 2",
+      "fecha": "Domingo, 27/09/2026, Sorteo 1",
       "numero": "01",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 3",
-      "numero": "12",
-      "serie": "",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 4",
+      "fecha": "Domingo, 27/09/2026, Sorteo 2",
       "numero": "11",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Sábado, 26/09/2026, Sorteo 5",
-      "numero": "10",
+      "fecha": "Domingo, 27/09/2026, Sorteo 3",
+      "numero": "07",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Domingo, 27/09/2026, Sorteo 4",
+      "numero": "08",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Domingo, 27/09/2026, Sorteo 5",
+      "numero": "14",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Sábado, 26/09/2026, Sorteo 1",
-      "numero": "04,19,22,35,36,41,42,44,46,55,56,63,64,68,71,72,74,75,76,79",
+      "fecha": "Domingo, 27/09/2026, Sorteo 1",
+      "numero": "01,04,09,13,20,31,32,38,39,45,49,51,56,60,64,66,68,74,75,80",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Sábado, 26/09/2026, Sorteo 2",
-      "numero": "07,08,10,11,19,20,24,25,29,42,51,52,53,56,59,62,69,73,76,79",
+      "fecha": "Domingo, 27/09/2026, Sorteo 2",
+      "numero": "02,06,11,14,15,17,18,21,30,34,38,39,43,45,63,73,76,79,81,84",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Sábado, 26/09/2026, Sorteo 3",
-      "numero": "02,03,06,08,15,25,30,34,43,49,50,51,53,54,59,62,65,69,78,85",
+      "fecha": "Domingo, 27/09/2026, Sorteo 3",
+      "numero": "05,07,16,19,21,25,27,30,33,38,49,53,65,66,67,68,71,72,73,81",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Sábado, 26/09/2026, Sorteo 4",
-      "numero": "02,10,19,22,28,33,34,42,43,48,50,55,56,68,70,71,72,73,75,76",
+      "fecha": "Domingo, 27/09/2026, Sorteo 4",
+      "numero": "07,13,21,23,28,33,36,43,47,48,51,52,58,60,65,67,68,82,83,84",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Sábado, 26/09/2026, Sorteo 5",
-      "numero": "02,06,07,08,17,18,25,26,31,38,44,47,48,57,66,68,71,73,75,79",
+      "fecha": "Domingo, 27/09/2026, Sorteo 5",
+      "numero": "05,07,08,11,14,20,22,24,28,29,37,38,39,44,47,54,55,70,72,74",
       "serie": "",
       "importebote": "1000000"
-    },
-    {
-      "tipo": "Sueldazo",
-      "fecha": "Sábado, 26/09/2026",
-      "numero": "94011",
-      "serie": "005",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Sábado, 26/09/2026",
-      "numero": "04424",
-      "serie": "006",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Sábado, 26/09/2026",
-      "numero": "78138",
-      "serie": "055",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Sábado, 26/09/2026",
-      "numero": "85156",
-      "serie": "009",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Sábado, 26/09/2026",
-      "numero": "86575",
-      "serie": "018",
-      "importebote": "0"
     }
   ]
 }
