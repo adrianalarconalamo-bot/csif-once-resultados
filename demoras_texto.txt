@@ -1,18 +1,18 @@
-01/10/2026
+02/10/2026
 
 *Demora el reintegro de las primeras cifras del cupón*
 Sorteo  Lunes a Viernes
 
-0 10/08/2026 38 días
-1 01/10/2026 00 días
-2 04/09/2026 19 días
-3 24/09/2026 05 días
-4 30/09/2026 01 día
-5 28/09/2026 03 días
-6 23/09/2026 06 días
-7 22/09/2026 07 días
-8 17/09/2026 10 días
-9 29/09/2026 02 días
+0 10/08/2026 39 días
+1 01/10/2026 01 día
+2 02/10/2026 00 días
+3 24/09/2026 06 días
+4 30/09/2026 02 días
+5 28/09/2026 04 días
+6 23/09/2026 07 días
+7 22/09/2026 08 días
+8 17/09/2026 11 días
+9 29/09/2026 03 días
 
 Hola la primera cifra solo se cuenta de lunes a viernes,
 (_*el sábado y domingo no hay reintegro y esos días no se cuentan. )*_
@@ -20,16 +20,16 @@ Hola la primera cifra solo se cuenta de lunes a viernes,
 *Demora las terminaciones*
 *del cupón*
 
-0 01/10/2026 00 días
-1 26/09/2026 05 días
-2 24/09/2026 07 días
-3 20/09/2026 11 días
-4 07/09/2026 24 días
-5 27/09/2026 04 días
-6 21/09/2026 10 días
-7 19/09/2026 12 días
-8 30/09/2026 01 día
-9 13/09/2026 18 días
+0 01/10/2026 01 día
+1 26/09/2026 06 días
+2 24/09/2026 08 días
+3 02/10/2026 00 días
+4 07/09/2026 25 días
+5 27/09/2026 05 días
+6 21/09/2026 11 días
+7 19/09/2026 13 días
+8 30/09/2026 02 días
+9 13/09/2026 19 días
 
 CSIF ONCE
 ESTAMOS POR TI
