@@ -12,6 +12,12 @@ on:
     - cron: "30-55/5 19 * * *"
     - cron: "*/5 20-23 * * *"
 
+# Evita que dos ejecuciones automáticas trabajen
+# sobre main al mismo tiempo.
+concurrency:
+  group: resultados-once
+  cancel-in-progress: false
+
 jobs:
 
   resultados:
@@ -29,6 +35,8 @@ jobs:
 
       - name: Descargar repositorio
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # =====================================================
       # CONFIGURAR PYTHON
@@ -311,6 +319,20 @@ jobs:
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # =================================================
+          # SINCRONIZAR ANTES DEL COMMIT
+          # =================================================
+          #
+          # Esto incorpora cualquier cambio que haya llegado
+          # a main antes de intentar guardar nuestros datos.
+          #
+
+          git pull --rebase origin main
+
+          # =================================================
+          # PREPARAR ARCHIVOS
+          # =================================================
+
           git add \
             resultados.json \
             whatsapp.txt \
@@ -320,17 +342,51 @@ jobs:
             telegram_enviado.json \
             demoras_enviadas.json
 
+          # =================================================
+          # COMPROBAR SI HAY CAMBIOS
+          # =================================================
+
           if git diff --cached --quiet; then
 
             echo "No hay cambios que guardar."
 
           else
 
+            # =================================================
+            # CREAR COMMIT
+            # =================================================
+
             git commit \
-  -m "Actualizar resultados, demoras y estados ONCE"
+              -m "Actualizar resultados, demoras y estados ONCE"
 
-git pull --rebase origin main
+            # =================================================
+            # PUSH CON REINTENTOS
+            # =================================================
 
-git push origin main
+            for intento in 1 2 3; do
+
+              if git push origin main; then
+
+                echo "Push realizado correctamente."
+
+                exit 0
+
+              fi
+
+              echo "Push rechazado."
+              echo "Sincronizando main..."
+              echo "Intento $intento de 3."
+
+              git pull --rebase origin main
+
+            done
+
+            # =================================================
+            # ERROR DEFINITIVO
+            # =================================================
+
+            echo "ERROR: no se pudo hacer push después de 3 intentos."
+
+            exit 1
 
           fi
