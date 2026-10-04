@@ -327,8 +327,10 @@ jobs:
           else
 
             git commit \
-              -m "Actualizar resultados, demoras y estados ONCE"
+  -m "Actualizar resultados, demoras y estados ONCE"
 
-            git push
+git pull --rebase origin main
+
+git push origin main
 
           fi
