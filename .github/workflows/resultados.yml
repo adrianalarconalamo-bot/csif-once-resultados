@@ -320,17 +320,7 @@ jobs:
             "41898282+github-actions[bot]@users.noreply.github.com"
 
           # =================================================
-          # SINCRONIZAR ANTES DEL COMMIT
-          # =================================================
-          #
-          # Esto incorpora cualquier cambio que haya llegado
-          # a main antes de intentar guardar nuestros datos.
-          #
-
-          git pull --rebase origin main
-
-          # =================================================
-          # PREPARAR ARCHIVOS
+          # PREPARAR ARCHIVOS GENERADOS
           # =================================================
 
           git add \
@@ -350,43 +340,90 @@ jobs:
 
             echo "No hay cambios que guardar."
 
-          else
-
-            # =================================================
-            # CREAR COMMIT
-            # =================================================
-
-            git commit \
-              -m "Actualizar resultados, demoras y estados ONCE"
-
-            # =================================================
-            # PUSH CON REINTENTOS
-            # =================================================
-
-            for intento in 1 2 3; do
-
-              if git push origin main; then
-
-                echo "Push realizado correctamente."
-
-                exit 0
-
-              fi
-
-              echo "Push rechazado."
-              echo "Sincronizando main..."
-              echo "Intento $intento de 3."
-
-              git pull --rebase origin main
-
-            done
-
-            # =================================================
-            # ERROR DEFINITIVO
-            # =================================================
-
-            echo "ERROR: no se pudo hacer push después de 3 intentos."
-
-            exit 1
+            exit 0
 
           fi
+
+          # =================================================
+          # GUARDAR TEMPORALMENTE LOS CAMBIOS
+          #
+          # Los archivos ya están preparados. Los guardamos
+          # temporalmente para poder sincronizar main.
+          # =================================================
+
+          git stash push \
+            -m "Cambios generados por resultados ONCE"
+
+          # =================================================
+          # SINCRONIZAR MAIN
+          # =================================================
+
+          git pull --rebase origin main
+
+          # =================================================
+          # RECUPERAR LOS ARCHIVOS GENERADOS
+          # =================================================
+
+          git stash pop
+
+          # =================================================
+          # PREPARAR DE NUEVO LOS ARCHIVOS
+          # =================================================
+
+          git add \
+            resultados.json \
+            whatsapp.txt \
+            historial_cupones.json \
+            demoras_texto.txt \
+            demoras_estado.json \
+            telegram_enviado.json \
+            demoras_enviadas.json
+
+          # =================================================
+          # COMPROBAR SI SIGUEN EXISTIENDO CAMBIOS
+          # =================================================
+
+          if git diff --cached --quiet; then
+
+            echo "No hay cambios nuevos que guardar."
+
+            exit 0
+
+          fi
+
+          # =================================================
+          # CREAR COMMIT
+          # =================================================
+
+          git commit \
+            -m "Actualizar resultados, demoras y estados ONCE"
+
+          # =================================================
+          # PUSH CON REINTENTOS
+          # =================================================
+
+          for intento in 1 2 3; do
+
+            if git push origin main; then
+
+              echo "Push realizado correctamente."
+
+              exit 0
+
+            fi
+
+            echo "Push rechazado."
+            echo "Sincronizando main..."
+            echo "Intento $intento de 3."
+
+            git pull --rebase origin main
+
+          done
+
+          # =================================================
+          # ERROR DEFINITIVO
+          # =================================================
+
+          echo "ERROR: no se pudo hacer push después de 3 intentos."
+
+          exit 1
