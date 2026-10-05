@@ -1,4 +1,4 @@
-import json
+ import json
 from datetime import datetime, date, timedelta
 
 RESULTADOS_FILE = "resultados.json"
@@ -245,8 +245,6 @@ def actualizar_estado(
         "ultima_fecha_procesada"
     )
 
-    # Evita duplicar un mismo sorteo si GitHub Actions
-    # ejecuta el programa varias veces.
     if ultima_fecha == fecha_texto:
         print(
             f"La fecha {fecha_texto} ya estaba procesada. "
@@ -292,8 +290,6 @@ def actualizar_estado(
             "la primera cifra NO se actualiza."
         )
 
-    # Solo marcamos la fecha como procesada cuando
-    # realmente hemos aplicado un resultado.
     estado["ultima_fecha_procesada"] = fecha_texto
 
     return True
