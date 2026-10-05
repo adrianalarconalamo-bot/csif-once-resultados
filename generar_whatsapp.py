@@ -273,8 +273,6 @@ if mi_dia is None:
 # ------------------------------------------------------------
 # LUNES A JUEVES
 # ------------------------------------------------------------
-# El Cupón Diario se celebra de lunes a jueves.
-# El viernes corresponde el Cuponazo.
 
 if DIA_SEMANA <= 3:
 
