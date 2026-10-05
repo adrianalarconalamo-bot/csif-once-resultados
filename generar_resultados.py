@@ -647,10 +647,6 @@ def extraer_sueldazo_desde_web(url):
 
     resultados = []
 
-    # ------------------------------------------------------
-    # BUSCAR TODAS LAS PAREJAS NÚMERO + SERIE
-    # ------------------------------------------------------
-
     patrones = [
         r"N[uú]mero\s*[:\-]?\s*"
         r"([0-9]{5})"
@@ -685,12 +681,6 @@ def extraer_sueldazo_desde_web(url):
             if pareja not in parejas:
                 parejas.append(pareja)
 
-    # ------------------------------------------------------
-    # SI LA PÁGINA DEVUELVE LAS CINCO PAREJAS,
-    # LA PRIMERA ES EL PREMIO PRINCIPAL
-    # Y LAS CUATRO SIGUIENTES SON LOS ADICIONALES.
-    # ------------------------------------------------------
-
     if len(parejas) >= 1:
 
         numero_principal, serie_principal = parejas[0]
@@ -715,10 +705,6 @@ def extraer_sueldazo_desde_web(url):
             "AVISO: no se encontró "
             "el número principal del Sueldazo."
         )
-
-    # ------------------------------------------------------
-    # CUATRO PREMIOS ADICIONALES
-    # ------------------------------------------------------
 
     for numero, serie in parejas[1:5]:
 
@@ -768,10 +754,6 @@ def obtener_cupones_oficiales():
 
     resultados = []
 
-    # ------------------------------------------------------
-    # CUPÓN DIARIO Y CUPONAZO
-    # ------------------------------------------------------
-
     for tipo, url in paginas:
 
         resultado = extraer_cupon_desde_web(
@@ -784,10 +766,6 @@ def obtener_cupones_oficiales():
             resultados.append(
                 resultado
             )
-
-    # ------------------------------------------------------
-    # SUELDAZO FIN DE SEMANA
-    # ------------------------------------------------------
 
     url_sueldazo = (
         "https://www.juegosonce.es/"
