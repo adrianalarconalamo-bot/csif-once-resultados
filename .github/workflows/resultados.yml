@@ -12,12 +12,6 @@ on:
     - cron: "30-55/5 19 * * *"
     - cron: "*/5 20-23 * * *"
 
-# Evita que dos ejecuciones automáticas trabajen
-# sobre main al mismo tiempo.
-concurrency:
-  group: resultados-once
-  cancel-in-progress: false
-
 jobs:
 
   resultados:
@@ -35,8 +29,6 @@ jobs:
 
       - name: Descargar repositorio
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       # =====================================================
       # CONFIGURAR PYTHON
@@ -133,10 +125,7 @@ jobs:
           echo "========================================"
 
       # =====================================================
-      # GENERAR Y ENVIAR RESULTADOS
-      #
-      # Este programa NO envía nada hasta que comprueba
-      # que todos los sorteos esperados están disponibles.
+      # COMPROBAR Y ENVIAR RESULTADOS
       # =====================================================
 
       - name: Comprobar y enviar resultados CSIF
@@ -147,8 +136,7 @@ jobs:
           python generar_whatsapp.py
 
       # =====================================================
-      # ENVIAR DEMORAS SOLO DESPUÉS DE HABER ENVIADO
-      # CORRECTAMENTE LOS RESULTADOS
+      # ENVIAR DEMORAS
       # =====================================================
 
       - name: Enviar informe de demoras
@@ -167,12 +155,7 @@ jobs:
               ZoneInfo("Europe/Madrid")
           ).strftime("%d/%m/%Y")
 
-          # -------------------------------------------------
-          # COMPROBAR QUE LOS RESULTADOS YA FUERON ENVIADOS
-          # -------------------------------------------------
-
           try:
-
               with open(
                   "telegram_enviado.json",
                   "r",
@@ -181,25 +164,18 @@ jobs:
                   estado = json.load(f)
 
           except FileNotFoundError:
-
               print(
                   "Los resultados todavía no han sido enviados."
               )
               raise SystemExit(0)
 
           if estado.get("fecha") != HOY:
-
               print(
                   "El estado no corresponde al día de hoy."
               )
               raise SystemExit(0)
 
-          # -------------------------------------------------
-          # EVITAR DUPLICAR LAS DEMORAS
-          # -------------------------------------------------
-
           try:
-
               with open(
                   "demoras_enviadas.json",
                   "r",
@@ -208,19 +184,13 @@ jobs:
                   estado_demoras = json.load(f)
 
           except FileNotFoundError:
-
               estado_demoras = {}
 
           if estado_demoras.get("fecha") == HOY:
-
               print(
                   "Las demoras de hoy ya fueron enviadas."
               )
               raise SystemExit(0)
-
-          # -------------------------------------------------
-          # CREDENCIALES
-          # -------------------------------------------------
 
           token = os.getenv(
               "TELEGRAM_BOT_TOKEN"
@@ -231,16 +201,11 @@ jobs:
           )
 
           if not token or not chat_id:
-
               raise SystemExit(
                   "ERROR: faltan "
                   "TELEGRAM_BOT_TOKEN "
                   "o TELEGRAM_CHAT_ID"
               )
-
-          # -------------------------------------------------
-          # LEER DEMORAS
-          # -------------------------------------------------
 
           with open(
               "demoras_texto.txt",
@@ -250,14 +215,9 @@ jobs:
               texto = f.read().strip()
 
           if not texto:
-
               raise SystemExit(
                   "ERROR: demoras_texto.txt está vacío."
               )
-
-          # -------------------------------------------------
-          # ENVIAR TELEGRAM
-          # -------------------------------------------------
 
           url = (
               "https://api.telegram.org/"
@@ -275,16 +235,11 @@ jobs:
           )
 
           if not respuesta.ok:
-
               raise SystemExit(
                   "ERROR Telegram: "
                   f"{respuesta.status_code} - "
                   f"{respuesta.text}"
               )
-
-          # -------------------------------------------------
-          # MARCAR DEMORAS COMO ENVIADAS
-          # -------------------------------------------------
 
           with open(
               "demoras_enviadas.json",
@@ -307,7 +262,7 @@ jobs:
           PY
 
       # =====================================================
-      # GUARDAR TODOS LOS ARCHIVOS
+      # GUARDAR RESULTADOS Y ESTADO
       # =====================================================
 
       - name: Guardar resultados y estado
@@ -319,10 +274,6 @@ jobs:
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # =================================================
-          # PREPARAR ARCHIVOS GENERADOS
-          # =================================================
-
           git add \
             resultados.json \
             whatsapp.txt \
@@ -331,99 +282,16 @@ jobs:
             demoras_estado.json \
             telegram_enviado.json \
             demoras_enviadas.json
-
-          # =================================================
-          # COMPROBAR SI HAY CAMBIOS
-          # =================================================
 
           if git diff --cached --quiet; then
 
             echo "No hay cambios que guardar."
 
-            exit 0
+          else
+
+            git commit \
+              -m "Actualizar resultados, demoras y estados ONCE"
+
+            git push
 
           fi
-
-          # =================================================
-          # GUARDAR TEMPORALMENTE LOS CAMBIOS
-          #
-          # Los archivos ya están preparados. Los guardamos
-          # temporalmente para poder sincronizar main.
-          # =================================================
-
-          git stash push \
-            -m "Cambios generados por resultados ONCE"
-
-          # =================================================
-          # SINCRONIZAR MAIN
-          # =================================================
-
-          git pull --rebase origin main
-
-          # =================================================
-          # RECUPERAR LOS ARCHIVOS GENERADOS
-          # =================================================
-
-          git stash pop
-
-          # =================================================
-          # PREPARAR DE NUEVO LOS ARCHIVOS
-          # =================================================
-
-          git add \
-            resultados.json \
-            whatsapp.txt \
-            historial_cupones.json \
-            demoras_texto.txt \
-            demoras_estado.json \
-            telegram_enviado.json \
-            demoras_enviadas.json
-
-          # =================================================
-          # COMPROBAR SI SIGUEN EXISTIENDO CAMBIOS
-          # =================================================
-
-          if git diff --cached --quiet; then
-
-            echo "No hay cambios nuevos que guardar."
-
-            exit 0
-
-          fi
-
-          # =================================================
-          # CREAR COMMIT
-          # =================================================
-
-          git commit \
-            -m "Actualizar resultados, demoras y estados ONCE"
-
-          # =================================================
-          # PUSH CON REINTENTOS
-          # =================================================
-
-          for intento in 1 2 3; do
-
-            if git push origin main; then
-
-              echo "Push realizado correctamente."
-
-              exit 0
-
-            fi
-
-            echo "Push rechazado."
-            echo "Sincronizando main..."
-            echo "Intento $intento de 3."
-
-            git pull --rebase origin main
-
-          done
-
-          # =================================================
-          # ERROR DEFINITIVO
-          # =================================================
-
-          echo "ERROR: no se pudo hacer push después de 3 intentos."
-
-          exit 1
