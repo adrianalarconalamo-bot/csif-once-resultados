@@ -19,90 +19,199 @@ HOY = AHORA.strftime("%d/%m/%Y")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-
-# ============================================================
-# COMPROBAR HORA
-# ============================================================
-
-# No hacemos el envío antes de las 21:30 hora española.
-if AHORA.hour < 21 or (
-    AHORA.hour == 21 and AHORA.minute < 30
-):
-
-    print(
-        f"[{AHORA.strftime('%H:%M')}] "
-        "Todavía no son las 21:30. "
-        "No se envía nada."
-    )
-
-    sys.exit(0)
+ARCHIVO_RESULTADOS = "resultados.json"
+ARCHIVO_WHATSAPP = "whatsapp.txt"
+ARCHIVO_ESTADO = "telegram_enviado.json"
 
 
 # ============================================================
-# COMPROBAR CREDENCIALES
+# FUNCIONES AUXILIARES
 # ============================================================
 
-if not TOKEN or not CHAT_ID:
+def limpiar(valor):
+    """Convierte cualquier valor en texto limpio."""
+    if valor is None:
+        return ""
 
-    raise SystemExit(
-        "ERROR: faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID"
+    return str(valor).strip()
+
+
+def es_tipo(tipo, *nombres):
+    """Comprueba si el tipo contiene alguno de los nombres."""
+    tipo = limpiar(tipo).upper()
+
+    return any(
+        nombre.upper() in tipo
+        for nombre in nombres
     )
 
 
-# ============================================================
-# COMPROBAR SI YA SE ENVIÓ HOY
-# ============================================================
+def numero_sorteo(resultado):
+    """
+    Extrae el número de sorteo de textos como:
+    'Lunes, 05/10/2026, Sorteo 3'
+    """
 
-try:
+    fecha = limpiar(resultado.get("fecha", ""))
+
+    marcador = "SORTEO "
+
+    posicion = fecha.upper().rfind(marcador)
+
+    if posicion == -1:
+        return 999
+
+    valor = fecha[posicion + len(marcador):].strip()
+
+    try:
+        return int(valor)
+    except ValueError:
+        return 999
+
+
+def cargar_json(ruta):
+    """Carga un JSON y muestra un error claro si falla."""
+
+    try:
+        with open(
+            ruta,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            return json.load(f)
+
+    except FileNotFoundError:
+
+        raise SystemExit(
+            f"ERROR: no existe {ruta}"
+        )
+
+    except json.JSONDecodeError as e:
+
+        raise SystemExit(
+            f"ERROR: {ruta} contiene JSON inválido: {e}"
+        )
+
+    except Exception as e:
+
+        raise SystemExit(
+            f"ERROR leyendo {ruta}: {e}"
+        )
+
+
+def guardar_json(ruta, datos):
+    """Guarda JSON con formato legible."""
 
     with open(
-        "telegram_enviado.json",
-        "r",
+        ruta,
+        "w",
         encoding="utf-8"
     ) as f:
 
-        estado_envio = json.load(f)
+        json.dump(
+            datos,
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
 
-except FileNotFoundError:
 
-    estado_envio = {}
+def obtener_resultados_hoy(resultados):
+    """
+    Selecciona exclusivamente los resultados cuya fecha
+    contiene la fecha española actual.
+    """
+
+    encontrados = []
+
+    for resultado in resultados:
+
+        fecha = limpiar(
+            resultado.get("fecha", "")
+        )
+
+        if HOY in fecha:
+
+            encontrados.append(resultado)
+
+    return encontrados
 
 
-if estado_envio.get("fecha") == HOY:
+def formatear_dupla(valor):
+    """
+    Calcula premiado, anterior y posterior.
+    Dupla utiliza números del 01 al 15.
+    """
 
-    print(
-        f"[{HOY}] Los resultados ya fueron enviados hoy. "
-        "No se vuelve a enviar."
+    valor = limpiar(valor)
+
+    try:
+
+        numero = int(valor)
+
+    except ValueError:
+
+        return valor, "—", "—"
+
+    if not 1 <= numero <= 15:
+
+        return valor, "—", "—"
+
+    anterior = 15 if numero == 1 else numero - 1
+    posterior = 1 if numero == 15 else numero + 1
+
+    return (
+        f"{numero:02d}",
+        f"{anterior:02d}",
+        f"{posterior:02d}"
     )
 
-    sys.exit(0)
+
+def separar_mi_dia(valor):
+    """
+    Convierte:
+
+    04 SEP 1977 01
+
+    en:
+
+    04 SEP 1977
+    01
+    """
+
+    valor = limpiar(valor)
+
+    partes = valor.rsplit(" ", 1)
+
+    if len(partes) == 2:
+
+        return (
+            partes[0].strip(),
+            partes[1].strip()
+        )
+
+    return valor, "—"
 
 
 # ============================================================
 # CARGAR RESULTADOS
 # ============================================================
 
-try:
-
-    with open(
-        "resultados.json",
-        "r",
-        encoding="utf-8"
-    ) as f:
-
-        datos = json.load(f)
-
-except Exception as e:
-
-    raise SystemExit(
-        f"ERROR leyendo resultados.json: {e}"
-    )
-
+datos = cargar_json(
+    ARCHIVO_RESULTADOS
+)
 
 resultados = datos.get(
     "resultados",
     []
 )
+
+if not isinstance(resultados, list):
+
+    raise SystemExit(
+        "ERROR: 'resultados' no es una lista."
+    )
 
 
 if not resultados:
@@ -114,34 +223,49 @@ if not resultados:
     sys.exit(0)
 
 
+print("")
+print("==========================================")
+print(" GENERAR WHATSAPP CSIF ONCE")
+print("==========================================")
+print(
+    f"Fecha actual: {HOY}"
+)
+print(
+    f"Hora actual:  {AHORA.strftime('%H:%M:%S')}"
+)
+print("")
+
+
 # ============================================================
-# ASEGURAR QUE SON RESULTADOS DE HOY
+# SELECCIONAR ÚNICAMENTE LOS RESULTADOS DE HOY
 # ============================================================
 
-resultados_hoy = []
+resultados_hoy = obtener_resultados_hoy(
+    resultados
+)
 
-for r in resultados:
-
-    fecha = str(
-        r.get("fecha", "")
-    )
-
-    if HOY in fecha:
-
-        resultados_hoy.append(r)
+print(
+    f"Resultados encontrados para {HOY}: "
+    f"{len(resultados_hoy)}"
+)
+print("")
 
 
 if not resultados_hoy:
 
     print(
-        f"No hay resultados correspondientes a {HOY}."
+        f"NO hay resultados del {HOY} todavía."
+    )
+
+    print(
+        "No se genera ni se envía ningún WhatsApp."
     )
 
     sys.exit(0)
 
 
 # ============================================================
-# CLASIFICAR RESULTADOS
+# CLASIFICACIÓN
 # ============================================================
 
 cupon_diario = None
@@ -159,87 +283,143 @@ super11 = []
 eurojackpot = None
 
 
-for r in resultados_hoy:
+for resultado in resultados_hoy:
 
-    tipo = str(
-        r.get("tipo", "")
-    ).upper().strip()
+    tipo = limpiar(
+        resultado.get("tipo", "")
+    )
 
-
-    if (
-        "CUPÓN DIARIO" in tipo
-        or "CUPON DIARIO" in tipo
+    if es_tipo(
+        tipo,
+        "CUPÓN DIARIO",
+        "CUPON DIARIO"
     ):
 
-        cupon_diario = r
+        cupon_diario = resultado
 
 
-    elif "CUPONAZO" in tipo:
-
-        cuponazo = r
-
-
-    elif "SUELDAZO ADICIONAL" in tipo:
-
-        sueldazo_adicionales.append(r)
-
-
-    elif "SUELDAZO" in tipo:
-
-        sueldazo_principal = r
-
-
-    elif (
-        "MI DÍA" in tipo
-        or "MI DIA" in tipo
+    elif es_tipo(
+        tipo,
+        "CUPONAZO"
     ):
 
-        mi_dia = r
+        cuponazo = resultado
 
 
-    elif "TRIPLEX" in tipo:
-
-        triplex.append(r)
-
-
-    elif "DUPLA" in tipo:
-
-        dupla.append(r)
-
-
-    elif (
-        "SUPER 11" in tipo
-        or "SUPERONCE" in tipo
+    elif es_tipo(
+        tipo,
+        "SUELDAZO ADICIONAL"
     ):
 
-        super11.append(r)
+        sueldazo_adicionales.append(
+            resultado
+        )
 
 
-    elif "EUROJACKPOT" in tipo:
+    elif es_tipo(
+        tipo,
+        "SUELDAZO"
+    ):
 
-        eurojackpot = r
+        sueldazo_principal = resultado
+
+
+    elif es_tipo(
+        tipo,
+        "MI DÍA",
+        "MI DIA"
+    ):
+
+        mi_dia = resultado
+
+
+    elif es_tipo(
+        tipo,
+        "TRIPLEX"
+    ):
+
+        triplex.append(
+            resultado
+        )
+
+
+    elif es_tipo(
+        tipo,
+        "DUPLA"
+    ):
+
+        dupla.append(
+            resultado
+        )
+
+
+    elif es_tipo(
+        tipo,
+        "SUPER 11",
+        "SUPERONCE"
+    ):
+
+        super11.append(
+            resultado
+        )
+
+
+    elif es_tipo(
+        tipo,
+        "EUROJACKPOT"
+    ):
+
+        eurojackpot = resultado
 
 
 # ============================================================
-# COMPROBAR COMPLETITUD
+# ORDENAR SORTEOS
+# ============================================================
+
+triplex.sort(
+    key=numero_sorteo
+)
+
+dupla.sort(
+    key=numero_sorteo
+)
+
+super11.sort(
+    key=numero_sorteo
+)
+
+sueldazo_adicionales.sort(
+    key=lambda r: (
+        limpiar(r.get("numero", "")),
+        limpiar(r.get("serie", ""))
+    )
+)
+
+
+# ============================================================
+# DÍA DE LA SEMANA
 # ============================================================
 
 DIA_SEMANA = AHORA.weekday()
 
-# 0 = lunes
-# 1 = martes
-# 2 = miércoles
-# 3 = jueves
-# 4 = viernes
-# 5 = sábado
-# 6 = domingo
+# 0 lunes
+# 1 martes
+# 2 miércoles
+# 3 jueves
+# 4 viernes
+# 5 sábado
+# 6 domingo
 
+
+# ============================================================
+# COMPROBAR RESULTADOS COMPLETOS
+# ============================================================
 
 faltan = []
 
 
 # ------------------------------------------------------------
-# JUEGOS DIARIOS
+# TRIPLEX
 # ------------------------------------------------------------
 
 if len(triplex) < 5:
@@ -249,6 +429,10 @@ if len(triplex) < 5:
     )
 
 
+# ------------------------------------------------------------
+# DUPLA
+# ------------------------------------------------------------
+
 if len(dupla) < 5:
 
     faltan.append(
@@ -256,12 +440,20 @@ if len(dupla) < 5:
     )
 
 
+# ------------------------------------------------------------
+# SUPER 11
+# ------------------------------------------------------------
+
 if len(super11) < 5:
 
     faltan.append(
         f"Super 11 ({len(super11)}/5)"
     )
 
+
+# ------------------------------------------------------------
+# MI DÍA
+# ------------------------------------------------------------
 
 if mi_dia is None:
 
@@ -312,7 +504,6 @@ if DIA_SEMANA in (1, 4):
 
 # ------------------------------------------------------------
 # SÁBADO Y DOMINGO
-# SUELDAZO COMPLETO
 # ------------------------------------------------------------
 
 if DIA_SEMANA in (5, 6):
@@ -323,7 +514,6 @@ if DIA_SEMANA in (5, 6):
             "Sueldazo principal"
         )
 
-
     if len(sueldazo_adicionales) < 4:
 
         faltan.append(
@@ -333,13 +523,52 @@ if DIA_SEMANA in (5, 6):
 
 
 # ============================================================
-# SI FALTA ALGO, NO ENVIAR
+# NO ENVIAR ANTES DE LAS 21:30
+# ============================================================
+
+if AHORA.hour < 21 or (
+    AHORA.hour == 21
+    and AHORA.minute < 30
+):
+
+    print(
+        f"[{AHORA.strftime('%H:%M')}] "
+        "Todavía no son las 21:30."
+    )
+
+    print(
+        "No se envía el mensaje todavía."
+    )
+
+    if faltan:
+
+        print("")
+        print(
+            "Además, todavía faltan resultados:"
+        )
+
+        for item in faltan:
+
+            print(
+                f"  - {item}"
+            )
+
+    print("")
+
+    sys.exit(0)
+
+
+# ============================================================
+# DESPUÉS DE LAS 21:30:
+# NO ENVIAR SI FALTA ALGÚN RESULTADO
 # ============================================================
 
 if faltan:
 
     print("")
-    print("⏳ RESULTADOS TODAVÍA INCOMPLETOS")
+    print("==========================================")
+    print(" RESULTADOS TODAVÍA INCOMPLETOS")
+    print("==========================================")
     print("")
 
     print(
@@ -355,35 +584,46 @@ if faltan:
     print("")
 
     print(
-        "Se volverá a comprobar en 5 minutos."
+        "Se volverá a comprobar en la siguiente ejecución."
     )
 
     sys.exit(0)
 
 
 # ============================================================
-# TODO COMPLETO
+# COMPROBAR SI YA SE ENVIÓ HOY
 # ============================================================
 
-print("")
-print("✅ TODOS LOS RESULTADOS DISPONIBLES")
+try:
 
-print(
-    f"📅 {HOY}"
-)
+    estado_envio = cargar_json(
+        ARCHIVO_ESTADO
+    )
 
-print("")
+except SystemExit:
+
+    estado_envio = {}
+
+
+if (
+    isinstance(estado_envio, dict)
+    and estado_envio.get("fecha") == HOY
+):
+
+    print(
+        f"[{HOY}] Los resultados ya fueron enviados hoy."
+    )
+
+    print(
+        "No se vuelve a enviar."
+    )
+
+    sys.exit(0)
 
 
 # ============================================================
-# CABECERA
+# CONSTRUIR MENSAJE
 # ============================================================
-
-fecha = resultados_hoy[0].get(
-    "fecha",
-    ""
-)
-
 
 lineas = [
 
@@ -393,24 +633,17 @@ lineas = [
 
     "🎟️✨ RESULTADOS ONCE ✨",
 
+    "",
+
+    f"📅 {HOY}",
+
+    "",
+
+    "━━━━━━━━━━━━━━━━━━",
+
     ""
 
 ]
-
-
-if fecha:
-
-    lineas += [
-
-        f"📅 {fecha}",
-
-        "",
-
-        "━━━━━━━━━━━━━━━━━━",
-
-        ""
-
-    ]
 
 
 # ============================================================
@@ -419,25 +652,29 @@ if fecha:
 
 if cupon_diario:
 
+    numero = limpiar(
+        cupon_diario.get("numero", "—")
+    )
+
+    serie = limpiar(
+        cupon_diario.get("serie", "")
+    )
+
     lineas += [
 
         "🎫⭐ CUPÓN DIARIO",
 
         "",
 
-        f"🔢 Número: "
-        f"{cupon_diario.get('numero', '—')}"
+        f"🔢 Número: {numero}"
 
     ]
 
-
-    if cupon_diario.get("serie"):
+    if serie:
 
         lineas.append(
-            f"🔖 Serie: "
-            f"{cupon_diario['serie']}"
+            f"🔖 Serie: {serie}"
         )
-
 
     lineas += [
 
@@ -456,25 +693,29 @@ if cupon_diario:
 
 if cuponazo:
 
+    numero = limpiar(
+        cuponazo.get("numero", "—")
+    )
+
+    serie = limpiar(
+        cuponazo.get("serie", "")
+    )
+
     lineas += [
 
         "🎟️💥 CUPONAZO",
 
         "",
 
-        f"🔢 Número: "
-        f"{cuponazo.get('numero', '—')}"
+        f"🔢 Número: {numero}"
 
     ]
 
-
-    if cuponazo.get("serie"):
+    if serie:
 
         lineas.append(
-            f"🔖 Serie: "
-            f"{cuponazo['serie']}"
+            f"🔖 Serie: {serie}"
         )
-
 
     lineas += [
 
@@ -504,8 +745,21 @@ if (
 
     ]
 
-
     if sueldazo_principal:
+
+        numero = limpiar(
+            sueldazo_principal.get(
+                "numero",
+                "—"
+            )
+        )
+
+        serie = limpiar(
+            sueldazo_principal.get(
+                "serie",
+                ""
+            )
+        )
 
         lineas += [
 
@@ -513,19 +767,15 @@ if (
 
             "",
 
-            f"🔢 Número: "
-            f"{sueldazo_principal.get('numero', '—')}"
+            f"🔢 Número: {numero}"
 
         ]
 
-
-        if sueldazo_principal.get("serie"):
+        if serie:
 
             lineas.append(
-                f"🔖 Serie: "
-                f"{sueldazo_principal['serie']}"
+                f"🔖 Serie: {serie}"
             )
-
 
         lineas += [
 
@@ -548,19 +798,21 @@ if (
 
         ]
 
+        for resultado in sueldazo_adicionales:
 
-        for r in sueldazo_adicionales:
-
-            numero = r.get(
-                "numero",
-                "—"
+            numero = limpiar(
+                resultado.get(
+                    "numero",
+                    "—"
+                )
             )
 
-            serie = r.get(
-                "serie",
-                ""
+            serie = limpiar(
+                resultado.get(
+                    "serie",
+                    ""
+                )
             )
-
 
             if serie:
 
@@ -573,7 +825,6 @@ if (
                 lineas.append(
                     f"🎁 {numero}"
                 )
-
 
         lineas += [
 
@@ -592,43 +843,53 @@ if (
 
 if eurojackpot:
 
+    numero = limpiar(
+        eurojackpot.get(
+            "numero",
+            "—"
+        )
+    )
+
+    serie = limpiar(
+        eurojackpot.get(
+            "serie",
+            ""
+        )
+    )
+
     lineas += [
 
         "🇪🇺💎 EUROJACKPOT",
 
         "",
 
-        f"🔢 Números: "
-        f"{eurojackpot.get('numero', '—')}"
+        f"🔢 Números: {numero}"
 
     ]
 
-
-    if eurojackpot.get("serie"):
+    if serie:
 
         lineas.append(
-            f"☀️ Soles: "
-            f"{eurojackpot['serie']}"
+            f"☀️ Soles: {serie}"
         )
 
-
-    if eurojackpot.get("importebote"):
-
-        bote = str(
-            eurojackpot["importebote"]
+    bote = limpiar(
+        eurojackpot.get(
+            "importebote",
+            ""
         )
+    )
 
+    if bote not in (
+        "",
+        "0",
+        "0.0",
+        "1000000"
+    ):
 
-        if bote not in (
-            "0",
-            "0.0",
-            "1000000"
-        ):
-
-            lineas.append(
-                f"💰 Bote: {bote} €"
-            )
-
+        lineas.append(
+            f"💰 Bote: {bote} €"
+        )
 
     lineas += [
 
@@ -647,32 +908,16 @@ if eurojackpot:
 
 if mi_dia:
 
-    valor = str(
+    valor = limpiar(
         mi_dia.get(
             "numero",
             "—"
         )
-    ).strip()
-
-
-    partes = valor.rsplit(
-        " ",
-        1
     )
 
-
-    if len(partes) == 2:
-
-        fecha_mi_dia = partes[0]
-
-        numero_suerte = partes[1]
-
-    else:
-
-        fecha_mi_dia = valor
-
-        numero_suerte = "—"
-
+    fecha_mi_dia, numero_suerte = separar_mi_dia(
+        valor
+    )
 
     lineas += [
 
@@ -684,8 +929,7 @@ if mi_dia:
 
         "",
 
-        f"🍀 Número de la suerte: "
-        f"{numero_suerte}",
+        f"🍀 Número de la suerte: {numero_suerte}",
 
         "",
 
@@ -710,26 +954,23 @@ if triplex:
 
     ]
 
-
-    for i, r in enumerate(
+    for i, resultado in enumerate(
         triplex,
         1
     ):
 
-        numero = r.get(
-            "numero",
-            "—"
+        numero = limpiar(
+            resultado.get(
+                "numero",
+                "—"
+            )
         )
 
+        lineas.append(
+            f"🎲 Sorteo {i}: {numero}"
+        )
 
-        lineas += [
-
-            f"🎲 Sorteo {i}: {numero}",
-
-            ""
-
-        ]
-
+        lineas.append("")
 
     lineas += [
 
@@ -758,88 +999,31 @@ if dupla:
 
     ]
 
-
-    for i, r in enumerate(
+    for i, resultado in enumerate(
         dupla,
         1
     ):
 
-        valor = str(
-            r.get(
+        premiado, anterior, posterior = formatear_dupla(
+            resultado.get(
                 "numero",
                 "—"
             )
-        ).strip()
-
-
-        try:
-
-            numero = int(valor)
-
-
-            if 1 <= numero <= 15:
-
-                anterior = (
-                    15
-                    if numero == 1
-                    else numero - 1
-                )
-
-
-                posterior = (
-                    1
-                    if numero == 15
-                    else numero + 1
-                )
-
-
-                premiado = (
-                    f"{numero:02d}"
-                )
-
-                reintegro_anterior = (
-                    f"{anterior:02d}"
-                )
-
-                reintegro_posterior = (
-                    f"{posterior:02d}"
-                )
-
-            else:
-
-                premiado = valor
-
-                reintegro_anterior = "—"
-
-                reintegro_posterior = "—"
-
-
-        except ValueError:
-
-            premiado = valor
-
-            reintegro_anterior = "—"
-
-            reintegro_posterior = "—"
-
+        )
 
         lineas += [
 
             f"🎲 Sorteo {i}",
 
-            f"🏆 Número premiado: "
-            f"{premiado}",
+            f"🏆 Número premiado: {premiado}",
 
-            f"⬅️ Reintegro anterior: "
-            f"{reintegro_anterior}",
+            f"⬅️ Reintegro anterior: {anterior}",
 
-            f"➡️ Reintegro posterior: "
-            f"{reintegro_posterior}",
+            f"➡️ Reintegro posterior: {posterior}",
 
             ""
 
         ]
-
 
     lineas += [
 
@@ -864,17 +1048,17 @@ if super11:
 
     ]
 
-
-    for i, r in enumerate(
+    for i, resultado in enumerate(
         super11,
         1
     ):
 
-        numero = r.get(
-            "numero",
-            "—"
+        numero = limpiar(
+            resultado.get(
+                "numero",
+                "—"
+            )
         )
-
 
         lineas += [
 
@@ -886,9 +1070,9 @@ if super11:
 
         ]
 
-
+    # IMPORTANTE:
     # No mostramos importebote.
-    # De esta forma nunca aparecerá 1000000.
+    # Así nunca aparecerá el 1000000.
 
     lineas += [
 
@@ -930,16 +1114,45 @@ texto = "\n".join(
 
 
 # ============================================================
-# GUARDAR MENSAJE
+# GUARDAR WHATSAPP.TXT
 # ============================================================
 
-with open(
-    "whatsapp.txt",
-    "w",
-    encoding="utf-8"
-) as f:
+try:
 
-    f.write(texto)
+    with open(
+        ARCHIVO_WHATSAPP,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(texto)
+
+except Exception as e:
+
+    raise SystemExit(
+        f"ERROR guardando {ARCHIVO_WHATSAPP}: {e}"
+    )
+
+
+print("")
+print("==========================================")
+print(" MENSAJE GENERADO CORRECTAMENTE")
+print("==========================================")
+print("")
+print(texto)
+print("")
+
+
+# ============================================================
+# COMPROBAR CREDENCIALES TELEGRAM
+# ============================================================
+
+if not TOKEN or not CHAT_ID:
+
+    raise SystemExit(
+        "ERROR: faltan TELEGRAM_BOT_TOKEN "
+        "o TELEGRAM_CHAT_ID"
+    )
 
 
 # ============================================================
@@ -968,17 +1181,20 @@ try:
 
         },
 
-        timeout=15
+        timeout=20
 
     )
 
-
-except Exception as e:
+except requests.RequestException as e:
 
     raise SystemExit(
         f"ERROR conectando con Telegram: {e}"
     )
 
+
+# ============================================================
+# COMPROBAR RESPUESTA TELEGRAM
+# ============================================================
 
 if not respuesta.ok:
 
@@ -989,41 +1205,56 @@ if not respuesta.ok:
     )
 
 
+try:
+
+    respuesta_json = respuesta.json()
+
+except ValueError:
+
+    raise SystemExit(
+        "ERROR: Telegram devolvió una respuesta "
+        "que no es JSON."
+    )
+
+
+if not respuesta_json.get("ok"):
+
+    raise SystemExit(
+        "ERROR Telegram: "
+        f"{respuesta.text}"
+    )
+
+
 # ============================================================
 # MARCAR COMO ENVIADO
 # ============================================================
 
-with open(
-    "telegram_enviado.json",
-    "w",
-    encoding="utf-8"
-) as f:
+guardar_json(
 
-    json.dump(
+    ARCHIVO_ESTADO,
 
-        {
+    {
 
-            "fecha": HOY,
+        "fecha": HOY,
 
-            "hora": AHORA.strftime(
-                "%H:%M:%S"
-            )
+        "hora": AHORA.strftime(
+            "%H:%M:%S"
+        )
 
-        },
+    }
 
-        f,
+)
 
-        ensure_ascii=False,
 
-        indent=2
-
-    )
-
+# ============================================================
+# FIN
+# ============================================================
 
 print("")
-print(
-    "✅ MENSAJE CSIF INFORMA ENVIADO CORRECTAMENTE."
-)
+print("==========================================")
+print(" ✅ MENSAJE CSIF ENVIADO CORRECTAMENTE")
+print("==========================================")
+print("")
 print(
     f"📅 Fecha: {HOY}"
 )
