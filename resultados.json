@@ -1,152 +1,124 @@
 {
-  "actualizado": "05/10/2026 02:12",
+  "actualizado": "06/10/2026 09:07",
   "resultados": [
     {
+      "tipo": "Cupón Diario",
+      "fecha": "Lunes, 05/10/2026",
+      "numero": "04391",
+      "serie": "021",
+      "importebote": "0"
+    },
+    {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 1",
-      "numero": "775",
+      "fecha": "Lunes, 05/10/2026, Sorteo 1",
+      "numero": "137",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 2",
-      "numero": "805",
+      "fecha": "Lunes, 05/10/2026, Sorteo 2",
+      "numero": "383",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 3",
-      "numero": "109",
+      "fecha": "Lunes, 05/10/2026, Sorteo 3",
+      "numero": "716",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 4",
-      "numero": "234",
+      "fecha": "Lunes, 05/10/2026, Sorteo 4",
+      "numero": "407",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 5",
-      "numero": "971",
+      "fecha": "Lunes, 05/10/2026, Sorteo 5",
+      "numero": "597",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Mi Día",
-      "fecha": "Domingo, 04/10/2026",
-      "numero": "01 OCT 2025 01",
+      "fecha": "Lunes, 05/10/2026",
+      "numero": "04 SEP 1977 01",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 1",
-      "numero": "09",
+      "fecha": "Lunes, 05/10/2026, Sorteo 1",
+      "numero": "06",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 2",
-      "numero": "15",
-      "serie": "",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 3",
-      "numero": "03",
-      "serie": "",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Dupla de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 4",
+      "fecha": "Lunes, 05/10/2026, Sorteo 2",
       "numero": "12",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Domingo, 04/10/2026, Sorteo 5",
+      "fecha": "Lunes, 05/10/2026, Sorteo 3",
+      "numero": "11",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Lunes, 05/10/2026, Sorteo 4",
+      "numero": "14",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Lunes, 05/10/2026, Sorteo 5",
       "numero": "06",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Domingo, 04/10/2026, Sorteo 1",
-      "numero": "01,07,09,11,20,23,28,31,35,38,42,49,55,64,65,72,73,79,82,85",
+      "fecha": "Lunes, 05/10/2026, Sorteo 1",
+      "numero": "04,06,07,09,11,16,21,22,26,30,33,35,38,47,49,52,63,73,76,83",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Domingo, 04/10/2026, Sorteo 2",
-      "numero": "06,07,10,11,12,18,29,31,32,33,34,42,44,50,61,64,65,66,67,82",
+      "fecha": "Lunes, 05/10/2026, Sorteo 2",
+      "numero": "01,12,14,23,26,27,32,35,43,47,49,51,52,59,61,62,72,73,79,80",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Domingo, 04/10/2026, Sorteo 3",
-      "numero": "03,04,05,09,11,13,14,16,30,31,37,40,44,60,61,64,67,70,72,76",
+      "fecha": "Lunes, 05/10/2026, Sorteo 3",
+      "numero": "03,04,13,16,22,27,30,34,38,39,43,46,50,53,58,62,64,71,73,82",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Domingo, 04/10/2026, Sorteo 4",
-      "numero": "04,09,12,22,26,33,36,37,40,42,47,50,52,54,58,68,72,74,75,85",
+      "fecha": "Lunes, 05/10/2026, Sorteo 4",
+      "numero": "04,11,12,15,18,19,22,23,28,31,32,36,37,48,52,61,71,72,82,85",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Domingo, 04/10/2026, Sorteo 5",
-      "numero": "01,14,16,18,21,23,29,35,37,46,48,50,53,55,56,57,58,73,80,82",
+      "fecha": "Lunes, 05/10/2026, Sorteo 5",
+      "numero": "09,14,17,26,29,30,31,32,34,38,42,65,67,68,72,74,77,80,82,83",
       "serie": "",
       "importebote": "1000000"
-    },
-    {
-      "tipo": "Sueldazo",
-      "fecha": "Domingo, 04/10/2026",
-      "numero": "28174",
-      "serie": "007",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Domingo, 04/10/2026",
-      "numero": "11490",
-      "serie": "006",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Domingo, 04/10/2026",
-      "numero": "17980",
-      "serie": "005",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Domingo, 04/10/2026",
-      "numero": "87533",
-      "serie": "051",
-      "importebote": "0"
-    },
-    {
-      "tipo": "Sueldazo adicional",
-      "fecha": "Domingo, 04/10/2026",
-      "numero": "92303",
-      "serie": "011",
-      "importebote": "0"
     }
   ]
 }
