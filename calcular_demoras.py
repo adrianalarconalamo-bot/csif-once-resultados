@@ -1,4 +1,4 @@
- import json
+import json
 from datetime import datetime, date, timedelta
 
 RESULTADOS_FILE = "resultados.json"
@@ -93,8 +93,8 @@ def convertir_fecha(texto):
 def extraer_fecha(resultado):
     """
     Extrae la fecha desde el campo 'fecha' de resultados.json.
-    Admite formatos del tipo:
 
+    Admite formatos como:
     'Cupón Diario, 19/09/2026'
     '19/09/2026'
     """
@@ -127,7 +127,8 @@ def extraer_fecha(resultado):
 
 def obtener_fecha_actual(resultados):
     """
-    Utiliza la fecha más reciente disponible en resultados.json.
+    Utiliza la fecha más reciente disponible
+    en resultados.json.
     """
 
     fechas = []
@@ -236,7 +237,8 @@ def actualizar_estado(
     - Primera cifra: SOLO lunes-viernes.
     - Terminación: TODOS los días.
 
-    Una fecha ya procesada nunca vuelve a modificar el estado.
+    Una fecha ya procesada nunca vuelve a modificar
+    el estado.
     """
 
     fecha_texto = fecha_actual.strftime("%d/%m/%Y")
