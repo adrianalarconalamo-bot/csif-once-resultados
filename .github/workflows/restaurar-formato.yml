@@ -1,0 +1,23 @@
+name: Restaurar scripts ONCE
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restaurar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restaurar scripts desde commit bueno
+        run: |
+          git checkout 8526b9a41677c9633e87724a69306127c6bcc7e1 -- generar_whatsapp.py enviar_whatsapp.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add generar_whatsapp.py enviar_whatsapp.py
+          git commit -m "Restaurar generar_whatsapp.py y enviar_whatsapp.py" || echo "Sin cambios"
+          git push
