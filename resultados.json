@@ -1,10 +1,52 @@
 {
-  "actualizado": "08/10/2026 10:19",
+  "actualizado": "08/10/2026 21:41",
   "resultados": [
+    {
+      "tipo": "Cupón Diario",
+      "fecha": "Jueves, 08/10/2026",
+      "numero": "89260",
+      "serie": "030",
+      "importebote": "0"
+    },
     {
       "tipo": "Triplex de la ONCE",
       "fecha": "Jueves, 08/10/2026, Sorteo 1",
       "numero": "983",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Triplex de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 2",
+      "numero": "201",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Triplex de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 3",
+      "numero": "800",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Triplex de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 4",
+      "numero": "105",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Triplex de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 5",
+      "numero": "087",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Mi Día",
+      "fecha": "Jueves, 08/10/2026",
+      "numero": "26 ENE 1947 09",
       "serie": "",
       "importebote": "0"
     },
@@ -16,9 +58,65 @@
       "importebote": "0"
     },
     {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 2",
+      "numero": "15",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 3",
+      "numero": "15",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 4",
+      "numero": "02",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
+      "tipo": "Dupla de la ONCE",
+      "fecha": "Jueves, 08/10/2026, Sorteo 5",
+      "numero": "10",
+      "serie": "",
+      "importebote": "0"
+    },
+    {
       "tipo": "Super 11",
       "fecha": "Jueves, 08/10/2026, Sorteo 1",
       "numero": "03,05,06,07,13,19,26,27,29,34,46,48,56,60,64,65,67,75,76,83",
+      "serie": "",
+      "importebote": "1000000"
+    },
+    {
+      "tipo": "Super 11",
+      "fecha": "Jueves, 08/10/2026, Sorteo 2",
+      "numero": "02,09,10,12,13,15,18,25,26,34,37,38,53,57,61,63,64,65,81,84",
+      "serie": "",
+      "importebote": "1000000"
+    },
+    {
+      "tipo": "Super 11",
+      "fecha": "Jueves, 08/10/2026, Sorteo 3",
+      "numero": "06,08,15,20,25,27,28,29,35,37,38,39,45,55,56,62,64,79,80,84",
+      "serie": "",
+      "importebote": "1000000"
+    },
+    {
+      "tipo": "Super 11",
+      "fecha": "Jueves, 08/10/2026, Sorteo 4",
+      "numero": "01,05,08,12,16,22,24,27,30,31,38,45,47,53,54,57,60,65,68,77",
+      "serie": "",
+      "importebote": "1000000"
+    },
+    {
+      "tipo": "Super 11",
+      "fecha": "Jueves, 08/10/2026, Sorteo 5",
+      "numero": "01,02,03,05,07,15,16,18,22,27,37,46,47,50,52,57,70,71,73,74",
       "serie": "",
       "importebote": "1000000"
     }
