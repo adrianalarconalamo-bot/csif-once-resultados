@@ -967,9 +967,16 @@ if triplex:
             )
         )
 
-        lineas.append(
-            f"🎲 Sorteo {i}: {numero}"
-        )
+        horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
+        hora = horas[i - 1] if i <= len(horas) else ""
+        if hora:
+            lineas.append(
+                f"🕐 {hora} h · Sorteo {i} → {numero}"
+            )
+        else:
+            lineas.append(
+                f"🎲 Sorteo {i}: {numero}"
+            )
 
         lineas.append("")
 
@@ -1012,18 +1019,20 @@ if dupla:
             )
         )
 
+        horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
+        hora = horas[i - 1] if i <= len(horas) else ""
+        if hora:
+            lineas.append(
+                f"🕐 {hora} h · Sorteo {i}"
+            )
+        else:
+            lineas.append(
+                f"🎲 Sorteo {i}"
+            )
         lineas += [
-
-            f"🎲 Sorteo {i}",
-
-            f"🏆 Número premiado: {premiado}",
-
-            f"⬅️ Reintegro anterior: {anterior}",
-
-            f"➡️ Reintegro posterior: {posterior}",
-
+            f"🏆 Premiado → {premiado}",
+            f"⬅️ Anterior {anterior}  ·  ➡️ Posterior {posterior}",
             ""
-
         ]
 
     lineas += [
@@ -1061,14 +1070,19 @@ if super11:
             )
         )
 
+        horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
+        hora = horas[i - 1] if i <= len(horas) else ""
+        if hora:
+            lineas.append(
+                f"🕐 {hora} h · Sorteo {i}"
+            )
+        else:
+            lineas.append(
+                f"🎲 Sorteo {i}"
+            )
         lineas += [
-
-            f"🎲 Sorteo {i}",
-
             f"🔢 {numero}",
-
             ""
-
         ]
 
     # IMPORTANTE:
