@@ -102,13 +102,20 @@ except Exception:
 if isinstance(est, dict) and est.get("fecha") == HOY:
     print(f"[{HOY}] Ya enviado hoy"); sys.exit(0)
 
+# ============================================================
+# MENSAJE COMPACTO PARA WHATSAPP (sin límite artificial de 999)
+# ============================================================
+
 lineas = ["📢 CSIF INFORMA · RESULTADOS ONCE", f"📅 {HOY}", "━━━━━━━━━━━━━━━━━━"]
+
 if cupon_diario:
     n, s = limpiar(cupon_diario.get("numero")), limpiar(cupon_diario.get("serie"))
     lineas += ["🎫 CUPÓN DIARIO", f"🔢 {n} · Serie {s}" if s else f"🔢 {n}", "━━━━━━━━━━━━━━━━━━"]
+
 if cuponazo:
     n, s = limpiar(cuponazo.get("numero")), limpiar(cuponazo.get("serie"))
     lineas += ["🎟️ CUPONAZO", f"🔢 {n} · Serie {s}" if s else f"🔢 {n}", "━━━━━━━━━━━━━━━━━━"]
+
 if sueldazo_principal or sueldazo_adicionales:
     lineas.append("💰 SUELDAZO FIN DE SEMANA")
     if sueldazo_principal:
@@ -121,6 +128,7 @@ if sueldazo_principal or sueldazo_adicionales:
             extras.append(f"{n}/{s}" if s else n)
         lineas.append("🎁 Adic: " + " · ".join(extras))
     lineas.append("━━━━━━━━━━━━━━━━━━")
+
 if eurojackpot:
     n, s = limpiar(eurojackpot.get("numero")), limpiar(eurojackpot.get("serie"))
     b = limpiar(eurojackpot.get("importebote", ""))
@@ -134,9 +142,11 @@ if eurojackpot:
         except ValueError:
             ej += f" · Bote {b}€"
     lineas += [ej, "━━━━━━━━━━━━━━━━━━"]
+
 if mi_dia:
     fmd, ns = separar_mi_dia(limpiar(mi_dia.get("numero")))
     lineas += [f"📅 MI DÍA: {fmd} · 🍀 {ns}", "━━━━━━━━━━━━━━━━━━"]
+
 if triplex:
     lineas.append("🔵 TRIPLEX")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
@@ -144,6 +154,7 @@ if triplex:
     lineas.append("  ".join(items[:3]))
     if len(items) > 3: lineas.append("  ".join(items[3:]))
     lineas.append("━━━━━━━━━━━━━━━━━━")
+
 if dupla:
     lineas.append("🟢 DUPLA (01-15)")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
@@ -154,6 +165,7 @@ if dupla:
     for j in range(0, len(items), 2):
         lineas.append(" · ".join(items[j:j+2]))
     lineas.append("━━━━━━━━━━━━━━━━━━")
+
 if super11:
     lineas.append("🔴 SUPER 11")
     horas = ["10h", "12h", "14h", "17h", "21h"]
@@ -162,11 +174,11 @@ if super11:
         while "  " in n: n = n.replace("  ", " ")
         lineas.append(f"{horas[i]}: {n}")
     lineas.append("━━━━━━━━━━━━━━━━━━")
+
 lineas += ["🤝 CSIF ONCE · ESTAMOS POR TI", "📞 TEL: 652338627 · 🌙 Buenas noches"]
 texto = "\n".join(lineas).strip()
-if len(texto) > 999:
-    texto = texto[:996] + "..."
-print(f"Longitud principal: {len(texto)}")
+
+print(f"Longitud principal: {len(texto)} caracteres")
 with open("whatsapp.txt", "w", encoding="utf-8") as f:
     f.write(texto)
 print(texto)
@@ -175,8 +187,7 @@ if not APIKEY or not PHONE:
     raise SystemExit("Faltan CALLMEBOT_APIKEY o CALLMEBOT_PHONE")
 
 def enviar(msg, etiqueta):
-    if len(msg) > 999:
-        msg = msg[:996] + "..."
+    # Ya no truncamos. CallMeBot + WhatsApp admiten mensajes largos.
     url = f"https://api.callmebot.com/whatsapp.php?phone={PHONE}&text={urllib.parse.quote(msg)}&apikey={APIKEY}"
     print(f"Enviando {etiqueta} ({len(msg)} chars)...")
     r = requests.get(url, timeout=30)
