@@ -623,12 +623,13 @@ if (
 
 
 # ============================================================
-# CONSTRUIR MENSAJE COMPACTO (máx. ~1000 caracteres para CallMeBot)
+# CONSTRUIR MENSAJE (~999 caracteres máx. para CallMeBot)
 # ============================================================
 
 lineas = [
-    f"📢 CSIF ONCE · {HOY}",
-    "",
+    "📢 CSIF INFORMA · RESULTADOS ONCE",
+    f"📅 {HOY}",
+    "━━━━━━━━━━━━━━━━━━",
 ]
 
 # ------------------------------------------------------------
@@ -637,10 +638,12 @@ lineas = [
 if cupon_diario:
     numero = limpiar(cupon_diario.get("numero", "—"))
     serie = limpiar(cupon_diario.get("serie", ""))
+    lineas.append("🎫 CUPÓN DIARIO")
     if serie:
-        lineas.append(f"🎫 CUPÓN {numero} · S.{serie}")
+        lineas.append(f"🔢 {numero} · Serie {serie}")
     else:
-        lineas.append(f"🎫 CUPÓN {numero}")
+        lineas.append(f"🔢 {numero}")
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
 # CUPONAZO
@@ -648,22 +651,25 @@ if cupon_diario:
 if cuponazo:
     numero = limpiar(cuponazo.get("numero", "—"))
     serie = limpiar(cuponazo.get("serie", ""))
+    lineas.append("🎟️ CUPONAZO")
     if serie:
-        lineas.append(f"🎟️ CUPONAZO {numero} · S.{serie}")
+        lineas.append(f"🔢 {numero} · Serie {serie}")
     else:
-        lineas.append(f"🎟️ CUPONAZO {numero}")
+        lineas.append(f"🔢 {numero}")
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
 # SUELDAZO
 # ------------------------------------------------------------
 if sueldazo_principal or sueldazo_adicionales:
+    lineas.append("💰 SUELDAZO FIN DE SEMANA")
     if sueldazo_principal:
         numero = limpiar(sueldazo_principal.get("numero", "—"))
         serie = limpiar(sueldazo_principal.get("serie", ""))
         if serie:
-            lineas.append(f"💰 SUELDAZO {numero} · S.{serie}")
+            lineas.append(f"🏆 {numero} · Serie {serie}")
         else:
-            lineas.append(f"💰 SUELDAZO {numero}")
+            lineas.append(f"🏆 {numero}")
     if sueldazo_adicionales:
         extras = []
         for resultado in sueldazo_adicionales:
@@ -671,6 +677,7 @@ if sueldazo_principal or sueldazo_adicionales:
             s = limpiar(resultado.get("serie", ""))
             extras.append(f"{n}/{s}" if s else n)
         lineas.append("🎁 " + " · ".join(extras))
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
 # EUROJACKPOT
@@ -679,19 +686,21 @@ if eurojackpot:
     numero = limpiar(eurojackpot.get("numero", "—"))
     serie = limpiar(eurojackpot.get("serie", ""))
     bote = limpiar(eurojackpot.get("importebote", ""))
-    linea_ej = f"🇪🇺 EJ {numero}"
+    lineas.append("🇪🇺 EUROJACKPOT")
+    linea_ej = f"🔢 {numero}"
     if serie:
-        linea_ej += f" · ☀️{serie}"
+        linea_ej += f" · ☀️ {serie}"
     if bote and bote not in ("", "0", "0.0", "1000000"):
         try:
             bote_num = int(float(bote))
             if bote_num >= 1_000_000:
-                linea_ej += f" · {bote_num // 1_000_000}M€"
+                linea_ej += f" · 💰 {bote_num // 1_000_000}M€"
             else:
-                linea_ej += f" · {bote}€"
+                linea_ej += f" · 💰 {bote}€"
         except ValueError:
-            linea_ej += f" · {bote}€"
+            linea_ej += f" · 💰 {bote}€"
     lineas.append(linea_ej)
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
 # MI DÍA
@@ -699,13 +708,13 @@ if eurojackpot:
 if mi_dia:
     valor = limpiar(mi_dia.get("numero", "—"))
     fecha_mi_dia, numero_suerte = separar_mi_dia(valor)
-    lineas.append(f"📅 MI DÍA {fecha_mi_dia} · 🍀{numero_suerte}")
+    lineas.append(f"📅 MI DÍA · {fecha_mi_dia} · 🍀 {numero_suerte}")
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
 # TRIPLEX
 # ------------------------------------------------------------
 if triplex:
-    lineas.append("")
     lineas.append("🔵 TRIPLEX")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
     fila1 = []
@@ -722,48 +731,55 @@ if triplex:
         lineas.append(" · ".join(fila1))
     if fila2:
         lineas.append(" · ".join(fila2))
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
-# DUPLA
+# DUPLA (con anterior y posterior)
 # ------------------------------------------------------------
 if dupla:
-    lineas.append("")
     lineas.append("🟢 DUPLA (01-15)")
-    horas = ["10h", "12h", "14h", "17h", "21h"]
+    horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
     items = []
     for i, resultado in enumerate(dupla):
-        premiado, _, _ = formatear_dupla(resultado.get("numero", "—"))
+        premiado, ant, pos = formatear_dupla(resultado.get("numero", "—"))
         hora = horas[i] if i < len(horas) else f"S{i+1}"
-        items.append(f"{hora}→{premiado}")
-    lineas.append(" · ".join(items))
+        items.append(f"{hora}→{premiado} (a{ant}/p{pos})")
+    for j in range(0, len(items), 2):
+        grupo = items[j:j+2]
+        lineas.append(" · ".join(grupo))
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
 # SUPER 11
 # ------------------------------------------------------------
 if super11:
-    lineas.append("")
-    lineas.append("🔴 SUPER11")
+    lineas.append("🔴 SUPER 11")
     horas = ["10h", "12h", "14h", "17h", "21h"]
     for i, resultado in enumerate(super11):
         numero = limpiar(resultado.get("numero", "—"))
-        # Normalizar separadores: comas → espacios
-        numero = numero.replace(",", " ").replace("  ", " ").strip()
+        numero = numero.replace(",", ",").strip()
+        while "  " in numero:
+            numero = numero.replace("  ", " ")
         hora = horas[i] if i < len(horas) else f"S{i+1}"
         lineas.append(f"{hora}: {numero}")
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 # ------------------------------------------------------------
 # PIE
 # ------------------------------------------------------------
 lineas += [
-    "",
-    "🤝 CSIF · TEL 652338627 · Buenas noches",
+    "🤝 CSIF ONCE · ESTAMOS POR TI",
+    "📞 TEL: 652338627 · 🌙 Buenas noches",
 ]
 
 texto = "\n".join(lineas).strip()
 
-# Aviso si se acerca al límite de CallMeBot
-if len(texto) > 1000:
-    print(f"AVISO: mensaje con {len(texto)} caracteres (límite recomendado 1000).")
+# Recortar si supera 999 caracteres (CallMeBot)
+if len(texto) > 999:
+    texto = texto[:996] + "..."
+    print(f"AVISO: mensaje recortado a 999 caracteres.")
+
+print(f"Longitud mensaje: {len(texto)} caracteres")
 
 
 # ============================================================
