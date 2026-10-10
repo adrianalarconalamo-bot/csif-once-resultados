@@ -37,6 +37,10 @@ jobs:
         run: |
           python generar_resultados.py
 
+      - name: Calcular demoras
+        run: |
+          python calcular_demoras.py
+
       - name: Comprobar y enviar por WhatsApp
         env:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
@@ -53,7 +57,9 @@ jobs:
             resultados.json \
             whatsapp.txt \
             whatsapp_enviado.json \
-            historial_cupones.json || true
+            historial_cupones.json \
+            demoras_texto.txt \
+            demoras_estado.json || true
 
           if git diff --cached --quiet; then
             echo "No hay cambios que guardar."
