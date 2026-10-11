@@ -103,91 +103,127 @@ if isinstance(est, dict) and est.get("fecha") == HOY:
     print(f"[{HOY}] Ya enviado hoy"); sys.exit(0)
 
 # ============================================================
-# MENSAJE COMPACTO PARA WHATSAPP (sin límite artificial de 999)
+# MENSAJE 1 — Detallado (Sueldazo + Mi Día + Triplex + Dupla)
 # ============================================================
 
-lineas = ["📢 CSIF INFORMA · RESULTADOS ONCE", f"📅 {HOY}", "━━━━━━━━━━━━━━━━━━"]
-
-if cupon_diario:
-    n, s = limpiar(cupon_diario.get("numero")), limpiar(cupon_diario.get("serie"))
-    lineas += ["🎫 CUPÓN DIARIO", f"🔢 {n} · Serie {s}" if s else f"🔢 {n}", "━━━━━━━━━━━━━━━━━━"]
-
-if cuponazo:
-    n, s = limpiar(cuponazo.get("numero")), limpiar(cuponazo.get("serie"))
-    lineas += ["🎟️ CUPONAZO", f"🔢 {n} · Serie {s}" if s else f"🔢 {n}", "━━━━━━━━━━━━━━━━━━"]
+lineas1 = [
+    "📢 CSIF INFORMA",
+    "",
+    "🎟️✨ RESULTADOS ONCE ✨",
+    f"📅 {HOY}",
+    "",
+    "━━━━━━━━━━━━━━━━━━",
+]
 
 if sueldazo_principal or sueldazo_adicionales:
-    lineas.append("💰 SUELDAZO FIN DE SEMANA")
+    lineas1.append("💰🌟 SUELDAZO FIN DE SEMANA")
     if sueldazo_principal:
-        n, s = limpiar(sueldazo_principal.get("numero")), limpiar(sueldazo_principal.get("serie"))
-        lineas.append(f"🏆 Principal: {n} · Serie {s}" if s else f"🏆 Principal: {n}")
+        n = limpiar(sueldazo_principal.get("numero"))
+        s = limpiar(sueldazo_principal.get("serie"))
+        lineas1 += [
+            "🏆 PREMIO PRINCIPAL",
+            f"🔢 Número: {n}",
+            f"🔖 Serie: {s}" if s else "",
+            "💶 2.000 € al mes durante 10 años",
+            "",
+        ]
     if sueldazo_adicionales:
-        extras = []
+        lineas1.append("🎁 PREMIOS ADICIONALES")
         for r in sueldazo_adicionales:
-            n, s = limpiar(r.get("numero")), limpiar(r.get("serie"))
-            extras.append(f"{n}/{s}" if s else n)
-        lineas.append("🎁 Adic: " + " · ".join(extras))
-    lineas.append("━━━━━━━━━━━━━━━━━━")
-
-if eurojackpot:
-    n, s = limpiar(eurojackpot.get("numero")), limpiar(eurojackpot.get("serie"))
-    b = limpiar(eurojackpot.get("importebote", ""))
-    lineas.append("🇪🇺 EUROJACKPOT")
-    ej = f"🔢 {n}"
-    if s: ej += f" · ☀️ {s}"
-    if b and b not in ("", "0", "0.0", "1000000"):
-        try:
-            bn = int(float(b))
-            ej += f" · Bote {bn//1_000_000}M€" if bn >= 1_000_000 else f" · Bote {b}€"
-        except ValueError:
-            ej += f" · Bote {b}€"
-    lineas += [ej, "━━━━━━━━━━━━━━━━━━"]
+            n = limpiar(r.get("numero"))
+            s = limpiar(r.get("serie"))
+            lineas1.append(f"🎁 {n} — Serie {s}" if s else f"🎁 {n}")
+        lineas1.append("")
+    lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 if mi_dia:
     fmd, ns = separar_mi_dia(limpiar(mi_dia.get("numero")))
-    lineas += [f"📅 MI DÍA: {fmd} · 🍀 {ns}", "━━━━━━━━━━━━━━━━━━"]
+    lineas1 += [
+        "📅🍀 MI DÍA",
+        f"📆 Fecha: {fmd}",
+        f"🍀 Número de la suerte: {ns}",
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+    ]
 
 if triplex:
-    lineas.append("🔵 TRIPLEX")
+    lineas1.append("🔵🎯 TRIPLEX")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
-    items = [f"{horas[i]}→{limpiar(r.get('numero'))}" for i, r in enumerate(triplex)]
-    lineas.append("  ".join(items[:3]))
-    if len(items) > 3: lineas.append("  ".join(items[3:]))
-    lineas.append("━━━━━━━━━━━━━━━━━━")
+    for i, r in enumerate(triplex):
+        n = limpiar(r.get("numero"))
+        h = horas[i] if i < len(horas) else ""
+        lineas1.append(f"🕐 {h} h · Sorteo {i+1} → {n}")
+    lineas1 += ["", "━━━━━━━━━━━━━━━━━━"]
 
 if dupla:
-    lineas.append("🟢 DUPLA (01-15)")
+    lineas1 += [
+        "🟢🔄 DUPLA",
+        "ℹ️ Números del 01 al 15",
+    ]
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
-    items = []
     for i, r in enumerate(dupla):
         p, a, po = formatear_dupla(r.get("numero"))
-        items.append(f"{horas[i]}→{p} ant{a}/pos{po}")
-    for j in range(0, len(items), 2):
-        lineas.append(" · ".join(items[j:j+2]))
-    lineas.append("━━━━━━━━━━━━━━━━━━")
+        h = horas[i] if i < len(horas) else ""
+        lineas1.append(f"🕐 {h} h · Sorteo {i+1} → {p} (Ant. {a} · Post. {po})")
+    lineas1 += ["", "━━━━━━━━━━━━━━━━━━"]
 
+lineas1 += [
+    "🤝 CSIF ONCE · ESTAMOS POR TI",
+    "📞 TEL: 652338627",
+    "🌙 Buenas noches.",
+    "CSIF, todo por todos.",
+    HOY,
+]
+
+msg1 = "\n".join([l for l in lineas1 if l is not None]).strip()
+
+# ============================================================
+# MENSAJE 2 — Super 11 + Demoras
+# ============================================================
+
+lineas2 = ["🔴🔥 SUPER 11"]
 if super11:
-    lineas.append("🔴 SUPER 11")
-    horas = ["10h", "12h", "14h", "17h", "21h"]
+    horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
     for i, r in enumerate(super11):
         n = limpiar(r.get("numero"))
-        while "  " in n: n = n.replace("  ", " ")
-        lineas.append(f"{horas[i]}: {n}")
-    lineas.append("━━━━━━━━━━━━━━━━━━")
+        h = horas[i] if i < len(horas) else ""
+        lineas2 += [f"🕐 {h} h · Sorteo {i+1}", f"🔢 {n}", ""]
+lineas2.append("━━━━━━━━━━━━━━━━━━")
 
-lineas += ["🤝 CSIF ONCE · ESTAMOS POR TI", "📞 TEL: 652338627 · 🌙 Buenas noches"]
-texto = "\n".join(lineas).strip()
+dem = ""
+if os.path.exists("demoras_texto.txt"):
+    dem = open("demoras_texto.txt", encoding="utf-8").read().strip()
+if dem:
+    # Quitar la fecha del principio si está
+    if dem.startswith(HOY):
+        dem = dem[len(HOY):].lstrip("\n")
+    lineas2.append(dem)
+else:
+    lineas2 += [
+        "*Demora el reintegro de las primeras cifras del cupón*",
+        "Sorteo Lunes a Viernes",
+        "(ver archivo demoras_texto.txt)",
+        "",
+        "CSIF ONCE",
+        "ESTAMOS POR TI",
+        "TEL: *652338627*",
+        "*Buenas noches*",
+    ]
 
-print(f"Longitud principal: {len(texto)} caracteres")
+msg2 = "\n".join(lineas2).strip()
+
+print(f"Mensaje 1: {len(msg1)} caracteres")
+print(f"Mensaje 2: {len(msg2)} caracteres")
+
 with open("whatsapp.txt", "w", encoding="utf-8") as f:
-    f.write(texto)
-print(texto)
+    f.write(msg1 + "\n\n---MENSAJE 2---\n\n" + msg2)
 
 if not APIKEY or not PHONE:
     raise SystemExit("Faltan CALLMEBOT_APIKEY o CALLMEBOT_PHONE")
 
 def enviar(msg, etiqueta):
-    # Ya no truncamos. CallMeBot + WhatsApp admiten mensajes largos.
+    if len(msg) > 999:
+        print(f"⚠️ {etiqueta} tiene {len(msg)} chars (>999). Se envía igual.")
     url = f"https://api.callmebot.com/whatsapp.php?phone={PHONE}&text={urllib.parse.quote(msg)}&apikey={APIKEY}"
     print(f"Enviando {etiqueta} ({len(msg)} chars)...")
     r = requests.get(url, timeout=30)
@@ -196,19 +232,16 @@ def enviar(msg, etiqueta):
         raise SystemExit(f"ERROR CallMeBot {etiqueta}: {r.text}")
     return len(msg)
 
-c1 = enviar(texto, "resultados")
-c2 = 0
-dem = ""
-if os.path.exists("demoras_texto.txt"):
-    dem = open("demoras_texto.txt", encoding="utf-8").read().strip()
-if dem:
-    time.sleep(4)
-    c2 = enviar(dem, "demoras")
-else:
-    print("Sin demoras_texto.txt")
+c1 = enviar(msg1, "resultados-parte1")
+time.sleep(3)
+c2 = enviar(msg2, "resultados-parte2+demoras")
 
 guardar_json("whatsapp_enviado.json", {
-    "fecha": HOY, "hora": AHORA.strftime("%H:%M:%S"), "metodo": "callmebot",
-    "caracteres_resultados": c1, "caracteres_demoras": c2, "demoras_enviadas": bool(dem),
+    "fecha": HOY,
+    "hora": AHORA.strftime("%H:%M:%S"),
+    "metodo": "callmebot",
+    "caracteres_msg1": c1,
+    "caracteres_msg2": c2,
+    "formato": "2 mensajes detallados CSIF",
 })
-print("✅ Enviado por WhatsApp")
+print("✅ Enviado por WhatsApp (2 mensajes)")
