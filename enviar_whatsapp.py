@@ -178,7 +178,7 @@ lineas1 += [
 msg1 = "\n".join([l for l in lineas1 if l is not None]).strip()
 
 # ============================================================
-# MENSAJE 2 — Super 11 + Demoras
+# MENSAJE 2 — Super 11 compacto + Demoras compactas (≤999)
 # ============================================================
 
 lineas2 = ["🔴🔥 SUPER 11"]
@@ -187,28 +187,69 @@ if super11:
     for i, r in enumerate(super11):
         n = limpiar(r.get("numero"))
         h = horas[i] if i < len(horas) else ""
-        lineas2 += [f"🕐 {h} h · Sorteo {i+1}", f"🔢 {n}", ""]
+        lineas2.append(f"🕐 {h}→{n}")
+lineas2.append("")
 lineas2.append("━━━━━━━━━━━━━━━━━━")
 
-dem = ""
+# Demoras compactas
 if os.path.exists("demoras_texto.txt"):
-    dem = open("demoras_texto.txt", encoding="utf-8").read().strip()
-if dem:
-    # Quitar la fecha del principio si está
-    if dem.startswith(HOY):
-        dem = dem[len(HOY):].lstrip("\n")
-    lineas2.append(dem)
+    dem_raw = open("demoras_texto.txt", encoding="utf-8").read().strip()
+    # Intentamos parsear de forma simple las líneas de demoras
+    # Formato esperado:
+    # 0 07/10/2026 02 días
+    lineas2.append("*Demora primeras cifras (L-V)*")
+    # Extraemos solo las líneas de números
+    primeras = []
+    terminaciones = []
+    seccion = None
+    for line in dem_raw.splitlines():
+        line = line.strip()
+        if "primeras cifras" in line.lower() or "reintegro de las primeras" in line.lower():
+            seccion = "primeras"
+            continue
+        if "terminaciones" in line.lower():
+            seccion = "terminaciones"
+            continue
+        if line and line[0].isdigit() and "/" in line:
+            partes = line.split()
+            if len(partes) >= 3:
+                num = partes[0]
+                fecha = partes[1][:5]  # dd/mm
+                dias = partes[2]
+                entry = f"{num} {fecha} {dias}d"
+                if seccion == "primeras":
+                    primeras.append(entry)
+                elif seccion == "terminaciones":
+                    terminaciones.append(entry)
+    # Agrupar de 3 en 3
+    def agrupar(lista):
+        res = []
+        for i in range(0, len(lista), 3):
+            res.append(" · ".join(lista[i:i+3]))
+        return res
+    for g in agrupar(primeras):
+        lineas2.append(g)
+    lineas2.append("")
+    lineas2.append("(sáb/dom no cuentan)")
+    lineas2.append("")
+    lineas2.append("*Demora terminaciones*")
+    for g in agrupar(terminaciones):
+        lineas2.append(g)
 else:
     lineas2 += [
-        "*Demora el reintegro de las primeras cifras del cupón*",
-        "Sorteo Lunes a Viernes",
-        "(ver archivo demoras_texto.txt)",
+        "*Demora primeras cifras (L-V)*",
+        "(ver demoras_texto.txt)",
         "",
-        "CSIF ONCE",
-        "ESTAMOS POR TI",
-        "TEL: *652338627*",
-        "*Buenas noches*",
+        "*Demora terminaciones*",
+        "(ver demoras_texto.txt)",
     ]
+
+lineas2 += [
+    "",
+    "CSIF ONCE · ESTAMOS POR TI",
+    "TEL: *652338627*",
+    "*Buenas noches*",
+]
 
 msg2 = "\n".join(lineas2).strip()
 
@@ -242,6 +283,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "2 mensajes detallados CSIF",
+    "formato": "2 mensajes detallados CSIF (≤999)",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
