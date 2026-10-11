@@ -103,104 +103,91 @@ if isinstance(est, dict) and est.get("fecha") == HOY:
     print(f"[{HOY}] Ya enviado hoy"); sys.exit(0)
 
 # ============================================================
-# MENSAJE 1 — Detallado (Sueldazo + Mi Día + Triplex + Dupla)
+# MENSAJE 1 — Todos los sorteos (compacto ≤999)
 # ============================================================
 
 lineas1 = [
-    "📢 CSIF INFORMA",
-    "",
-    "🎟️✨ RESULTADOS ONCE ✨",
+    "📢 CSIF INFORMA · RESULTADOS ONCE",
     f"📅 {HOY}",
-    "",
     "━━━━━━━━━━━━━━━━━━",
 ]
 
 if sueldazo_principal or sueldazo_adicionales:
-    lineas1.append("💰🌟 SUELDAZO FIN DE SEMANA")
+    lineas1.append("💰 SUELDAZO")
     if sueldazo_principal:
         n = limpiar(sueldazo_principal.get("numero"))
         s = limpiar(sueldazo_principal.get("serie"))
-        lineas1 += [
-            "🏆 PREMIO PRINCIPAL",
-            f"🔢 Número: {n}",
-            f"🔖 Serie: {s}" if s else "",
-            "💶 2.000 € al mes durante 10 años",
-            "",
-        ]
+        lineas1.append(f"🏆 {n} · Serie {s}" if s else f"🏆 {n}")
+        lineas1.append("💶 2.000 €/mes × 10 años")
     if sueldazo_adicionales:
-        lineas1.append("🎁 PREMIOS ADICIONALES")
+        extras = []
         for r in sueldazo_adicionales:
             n = limpiar(r.get("numero"))
             s = limpiar(r.get("serie"))
-            lineas1.append(f"🎁 {n} — Serie {s}" if s else f"🎁 {n}")
-        lineas1.append("")
+            extras.append(f"{n}/{s}" if s else n)
+        lineas1.append("🎁 " + " · ".join(extras))
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 if mi_dia:
     fmd, ns = separar_mi_dia(limpiar(mi_dia.get("numero")))
-    lineas1 += [
-        "📅🍀 MI DÍA",
-        f"📆 Fecha: {fmd}",
-        f"🍀 Número de la suerte: {ns}",
-        "",
-        "━━━━━━━━━━━━━━━━━━",
-    ]
+    lineas1.append(f"📅 MI DÍA: {fmd} · 🍀 {ns}")
+    lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 if triplex:
-    lineas1.append("🔵🎯 TRIPLEX")
+    lineas1.append("🔵 TRIPLEX")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
-    for i, r in enumerate(triplex):
-        n = limpiar(r.get("numero"))
-        h = horas[i] if i < len(horas) else ""
-        lineas1.append(f"🕐 {h} h · Sorteo {i+1} → {n}")
-    lineas1 += ["", "━━━━━━━━━━━━━━━━━━"]
+    items = [f"{horas[i]}→{limpiar(r.get('numero'))}" for i, r in enumerate(triplex)]
+    lineas1.append(" · ".join(items[:3]))
+    if len(items) > 3:
+        lineas1.append(" · ".join(items[3:]))
+    lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 if dupla:
-    lineas1 += [
-        "🟢🔄 DUPLA",
-        "ℹ️ Números del 01 al 15",
-    ]
+    lineas1.append("🟢 DUPLA (01-15)")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
+    items = []
     for i, r in enumerate(dupla):
         p, a, po = formatear_dupla(r.get("numero"))
-        h = horas[i] if i < len(horas) else ""
-        lineas1.append(f"🕐 {h} h · Sorteo {i+1} → {p} (Ant. {a} · Post. {po})")
-    lineas1 += ["", "━━━━━━━━━━━━━━━━━━"]
+        items.append(f"{horas[i]}→{p} ({a}/{po})")
+    lineas1.append(" · ".join(items[:2]))
+    if len(items) > 2:
+        lineas1.append(" · ".join(items[2:4]))
+    if len(items) > 4:
+        lineas1.append(" · ".join(items[4:]))
+    lineas1.append("━━━━━━━━━━━━━━━━━━")
 
-lineas1 += [
-    "🤝 CSIF ONCE · ESTAMOS POR TI",
-    "📞 TEL: 652338627",
-    "🌙 Buenas noches.",
-    "CSIF, todo por todos.",
-    HOY,
-]
-
-msg1 = "\n".join([l for l in lineas1 if l is not None]).strip()
-
-# ============================================================
-# MENSAJE 2 — Super 11 compacto + Demoras compactas (≤999)
-# ============================================================
-
-lineas2 = ["🔴🔥 SUPER 11"]
 if super11:
+    lineas1.append("🔴 SUPER 11")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
     for i, r in enumerate(super11):
         n = limpiar(r.get("numero"))
-        h = horas[i] if i < len(horas) else ""
-        lineas2.append(f"🕐 {h}→{n}")
-lineas2.append("")
-lineas2.append("━━━━━━━━━━━━━━━━━━")
+        lineas1.append(f"{horas[i]}→{n}")
+    lineas1.append("━━━━━━━━━━━━━━━━━━")
 
-# Demoras compactas
+lineas1 += [
+    "🤝 CSIF ONCE · 📞 652338627",
+    "🌙 Buenas noches · CSIF, todo por todos",
+]
+
+msg1 = "\n".join(lineas1).strip()
+
+# ============================================================
+# MENSAJE 2 — Demoras claras con emojis
+# ============================================================
+
+lineas2 = [
+    f"📊 DEMORAS DEL CUPÓN · {HOY}",
+    "",
+    "🔢 *Primeras cifras* (solo Lunes a Viernes)",
+    "(sábado y domingo NO cuentan)",
+    "",
+]
+
+# Parsear demoras_texto.txt si existe
+primeras = {}
+terminaciones = {}
 if os.path.exists("demoras_texto.txt"):
     dem_raw = open("demoras_texto.txt", encoding="utf-8").read().strip()
-    # Intentamos parsear de forma simple las líneas de demoras
-    # Formato esperado:
-    # 0 07/10/2026 02 días
-    lineas2.append("*Demora primeras cifras (L-V)*")
-    # Extraemos solo las líneas de números
-    primeras = []
-    terminaciones = []
     seccion = None
     for line in dem_raw.splitlines():
         line = line.strip()
@@ -214,41 +201,39 @@ if os.path.exists("demoras_texto.txt"):
             partes = line.split()
             if len(partes) >= 3:
                 num = partes[0]
-                fecha = partes[1][:5]  # dd/mm
+                fecha = partes[1]
                 dias = partes[2]
-                entry = f"{num} {fecha} {dias}d"
                 if seccion == "primeras":
-                    primeras.append(entry)
+                    primeras[num] = (fecha, dias)
                 elif seccion == "terminaciones":
-                    terminaciones.append(entry)
-    # Agrupar de 3 en 3
-    def agrupar(lista):
-        res = []
-        for i in range(0, len(lista), 3):
-            res.append(" · ".join(lista[i:i+3]))
-        return res
-    for g in agrupar(primeras):
-        lineas2.append(g)
-    lineas2.append("")
-    lineas2.append("(sáb/dom no cuentan)")
-    lineas2.append("")
-    lineas2.append("*Demora terminaciones*")
-    for g in agrupar(terminaciones):
-        lineas2.append(g)
-else:
-    lineas2 += [
-        "*Demora primeras cifras (L-V)*",
-        "(ver demoras_texto.txt)",
-        "",
-        "*Demora terminaciones*",
-        "(ver demoras_texto.txt)",
-    ]
+                    terminaciones[num] = (fecha, dias)
+
+emojis = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"]
+
+for i in range(10):
+    num = str(i)
+    if num in primeras:
+        fecha, dias = primeras[num]
+        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias} días" if dias != "00" and dias != "0" else f"{emojis[i]}  {fecha}  →  {dias} días")
+    else:
+        lineas2.append(f"{emojis[i]}  —")
+
+lineas2 += ["", "━━━━━━━━━━━━━━━━━━", "", "🔚 *Terminaciones del cupón*", ""]
+
+for i in range(10):
+    num = str(i)
+    if num in terminaciones:
+        fecha, dias = terminaciones[num]
+        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias} días")
+    else:
+        lineas2.append(f"{emojis[i]}  —")
 
 lineas2 += [
     "",
-    "CSIF ONCE · ESTAMOS POR TI",
-    "TEL: *652338627*",
-    "*Buenas noches*",
+    "━━━━━━━━━━━━━━━━━━",
+    "🤝 CSIF ONCE · ESTAMOS POR TI",
+    "📞 TEL: *652338627*",
+    "🌙 Buenas noches",
 ]
 
 msg2 = "\n".join(lineas2).strip()
@@ -273,9 +258,9 @@ def enviar(msg, etiqueta):
         raise SystemExit(f"ERROR CallMeBot {etiqueta}: {r.text}")
     return len(msg)
 
-c1 = enviar(msg1, "resultados-parte1")
+c1 = enviar(msg1, "resultados")
 time.sleep(3)
-c2 = enviar(msg2, "resultados-parte2+demoras")
+c2 = enviar(msg2, "demoras")
 
 guardar_json("whatsapp_enviado.json", {
     "fecha": HOY,
@@ -283,6 +268,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "2 mensajes detallados CSIF (≤999)",
+    "formato": "Msg1 todos sorteos + Msg2 demoras claras",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
