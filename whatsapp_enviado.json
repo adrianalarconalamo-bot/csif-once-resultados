@@ -1,8 +1,8 @@
 {
-  "fecha": "11/10/2026",
-  "hora": "21:40:09",
+  "fecha": "12/10/2026",
+  "hora": "21:42:44",
   "metodo": "callmebot",
-  "caracteres_resultados": 886,
-  "caracteres_demoras": 739,
-  "demoras_enviadas": true
+  "caracteres_msg1": 746,
+  "caracteres_msg2": 801,
+  "formato": "Msg1 todos sorteos + Msg2 demoras claras"
 }
