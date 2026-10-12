@@ -104,6 +104,7 @@ if isinstance(est, dict) and est.get("fecha") == HOY:
 
 # ============================================================
 # MENSAJE 1 — Todos los sorteos (compacto ≤999)
+# Horarios en *negrita* para que destaquen
 # ============================================================
 
 lineas1 = [
@@ -136,7 +137,7 @@ if mi_dia:
 if triplex:
     lineas1.append("🔵 TRIPLEX")
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
-    items = [f"{horas[i]}→{limpiar(r.get('numero'))}" for i, r in enumerate(triplex)]
+    items = [f"*{horas[i]}*→{limpiar(r.get('numero'))}" for i, r in enumerate(triplex)]
     lineas1.append(" · ".join(items[:3]))
     if len(items) > 3:
         lineas1.append(" · ".join(items[3:]))
@@ -148,7 +149,7 @@ if dupla:
     items = []
     for i, r in enumerate(dupla):
         p, a, po = formatear_dupla(r.get("numero"))
-        items.append(f"{horas[i]}→{p} ({a}/{po})")
+        items.append(f"*{horas[i]}*→{p} ({a}/{po})")
     lineas1.append(" · ".join(items[:2]))
     if len(items) > 2:
         lineas1.append(" · ".join(items[2:4]))
@@ -161,26 +162,25 @@ if super11:
     horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
     for i, r in enumerate(super11):
         n = limpiar(r.get("numero"))
-        lineas1.append(f"{horas[i]}→{n}")
+        lineas1.append(f"*{horas[i]}*→{n}")
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 lineas1 += [
     "🤝 CSIF ONCE · 📞 652338627",
-    "🌙 Buenas noches · CSIF, todo por todos",
+    "🌙 Buenas noches",
 ]
 
 msg1 = "\n".join(lineas1).strip()
 
 # ============================================================
-# MENSAJE 2 — Demoras claras con emojis
+# MENSAJE 2 — Demoras (compacto para que quepa entero ≤999)
+# Se quitan líneas vacías y un separador extra
 # ============================================================
 
 lineas2 = [
     f"📊 DEMORAS DEL CUPÓN · {HOY}",
-    "",
-    "🔢 *Primeras cifras* (solo Lunes a Viernes)",
-    "(sábado y domingo NO cuentan)",
-    "",
+    "🔢 *Primeras cifras* (solo L-V)",
+    "(sáb/dom NO cuentan)",
 ]
 
 # Parsear demoras_texto.txt si existe
@@ -214,11 +214,11 @@ for i in range(10):
     num = str(i)
     if num in primeras:
         fecha, dias = primeras[num]
-        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias} días" if dias != "00" and dias != "0" else f"{emojis[i]}  {fecha}  →  {dias} días")
+        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias} días")
     else:
         lineas2.append(f"{emojis[i]}  —")
 
-lineas2 += ["", "━━━━━━━━━━━━━━━━━━", "", "🔚 *Terminaciones del cupón*", ""]
+lineas2 += ["━━━━━━━━━━━━━━━━━━", "🔚 *Terminaciones del cupón*"]
 
 for i in range(10):
     num = str(i)
@@ -229,10 +229,8 @@ for i in range(10):
         lineas2.append(f"{emojis[i]}  —")
 
 lineas2 += [
-    "",
     "━━━━━━━━━━━━━━━━━━",
-    "🤝 CSIF ONCE · ESTAMOS POR TI",
-    "📞 TEL: *652338627*",
+    "🤝 CSIF ONCE · 📞 *652338627*",
     "🌙 Buenas noches",
 ]
 
@@ -268,6 +266,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "Msg1 todos sorteos + Msg2 demoras claras",
+    "formato": "Msg1 horarios en negrita + Msg2 demoras compacto",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
