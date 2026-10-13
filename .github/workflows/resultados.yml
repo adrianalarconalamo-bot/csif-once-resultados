@@ -263,6 +263,7 @@ jobs:
 
       # =====================================================
       # GUARDAR RESULTADOS Y ESTADO
+      # (pull --rebase + reintentos para evitar conflictos)
       # =====================================================
 
       - name: Guardar resultados y estado
@@ -292,6 +293,19 @@ jobs:
             git commit \
               -m "Actualizar resultados, demoras y estados ONCE"
 
-            git push
+            # Reintentos con pull --rebase para evitar race conditions
+            for i in 1 2 3 4 5; do
+              echo "Intento de push #$i ..."
+              if git push; then
+                echo "Push correcto."
+                exit 0
+              fi
+              echo "Push rechazado. Haciendo pull --rebase..."
+              git pull --rebase origin main || git pull --rebase origin main --autostash
+              sleep 2
+            done
+
+            echo "ERROR: no se pudo hacer push tras varios reintentos."
+            exit 1
 
           fi
