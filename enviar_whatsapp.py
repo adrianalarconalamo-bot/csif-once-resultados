@@ -113,6 +113,20 @@ lineas1 = [
     "━━━━━━━━━━━━━━━━━━",
 ]
 
+# Cupón Diario (L-J) o Cuponazo (V)
+if cupon_diario:
+    n = limpiar(cupon_diario.get("numero"))
+    s = limpiar(cupon_diario.get("serie"))
+    lineas1.append("🎫 CUPÓN DIARIO")
+    lineas1.append(f"🔢 {n}" + (f" · Serie {s}" if s else ""))
+    lineas1.append("━━━━━━━━━━━━━━━━━━")
+elif cuponazo:
+    n = limpiar(cuponazo.get("numero"))
+    s = limpiar(cuponazo.get("serie"))
+    lineas1.append("🎟️ CUPONAZO")
+    lineas1.append(f"🔢 {n}" + (f" · Serie {s}" if s else ""))
+    lineas1.append("━━━━━━━━━━━━━━━━━━")
+
 if sueldazo_principal or sueldazo_adicionales:
     lineas1.append("💰 SUELDAZO")
     if sueldazo_principal:
@@ -174,7 +188,6 @@ msg1 = "\n".join(lineas1).strip()
 
 # ============================================================
 # MENSAJE 2 — Demoras (compacto para que quepa entero ≤999)
-# Se quitan líneas vacías y un separador extra
 # ============================================================
 
 lineas2 = [
@@ -214,7 +227,10 @@ for i in range(10):
     num = str(i)
     if num in primeras:
         fecha, dias = primeras[num]
-        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias} días")
+        # Quitar ceros a la izquierda del número de días si viene con 02, 05, etc.
+        dias_limpio = str(int(dias)) if dias.isdigit() else dias
+        palabra = "día" if dias_limpio == "1" else "días"
+        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias_limpio} {palabra}")
     else:
         lineas2.append(f"{emojis[i]}  —")
 
@@ -224,7 +240,9 @@ for i in range(10):
     num = str(i)
     if num in terminaciones:
         fecha, dias = terminaciones[num]
-        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias} días")
+        dias_limpio = str(int(dias)) if dias.isdigit() else dias
+        palabra = "día" if dias_limpio == "1" else "días"
+        lineas2.append(f"{emojis[i]}  {fecha}  →  {dias_limpio} {palabra}")
     else:
         lineas2.append(f"{emojis[i]}  —")
 
@@ -266,6 +284,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "Msg1 horarios en negrita + Msg2 demoras compacto",
+    "formato": "Msg1 con Cupón + horarios en negrita + Msg2 demoras compacto",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
