@@ -180,7 +180,8 @@ if super11:
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 lineas1 += [
-    "🤝 CSIF ONCE · 📞 652338627",
+    "🤝 CSIF ONCE",
+    "📞 TEL: 652338627",
     "🌙 Buenas noches",
 ]
 
@@ -248,7 +249,8 @@ for i in range(10):
 
 lineas2 += [
     "━━━━━━━━━━━━━━━━━━",
-    "🤝 CSIF ONCE · 📞 *652338627*",
+    "🤝 CSIF ONCE",
+    "📞 TEL: 652338627",
     "🌙 Buenas noches",
 ]
 
@@ -284,6 +286,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "Msg1 con Cupón + horarios en negrita + Msg2 demoras compacto",
+    "formato": "Msg1 con Cupón + horarios en negrita + Msg2 demoras compacto + TEL claro",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
