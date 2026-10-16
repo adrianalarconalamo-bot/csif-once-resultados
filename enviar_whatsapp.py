@@ -179,10 +179,13 @@ if super11:
         lineas1.append(f"*{horas[i]}*→{n}")
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
+# PIE COMPACTO — sin líneas en blanco
 lineas1 += [
     "🤝 CSIF ONCE",
+    "ESTAMOS POR TI",
     "📞 TEL: 652338627",
-    "🌙 Buenas noches",
+    "🌙 Buenas noches.",
+    "CSIF, todo por todos.",
 ]
 
 msg1 = "\n".join(lineas1).strip()
@@ -247,11 +250,14 @@ for i in range(10):
     else:
         lineas2.append(f"{emojis[i]}  —")
 
+# PIE COMPACTO — sin líneas en blanco
 lineas2 += [
     "━━━━━━━━━━━━━━━━━━",
     "🤝 CSIF ONCE",
+    "ESTAMOS POR TI",
     "📞 TEL: 652338627",
-    "🌙 Buenas noches",
+    "🌙 Buenas noches.",
+    "CSIF, todo por todos.",
 ]
 
 msg2 = "\n".join(lineas2).strip()
@@ -286,6 +292,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "Msg1 con Cupón + horarios en negrita + Msg2 demoras compacto + TEL claro",
+    "formato": "Msg1 + Msg2 demoras + pie compacto (lema + TEL + Buenas noches)",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
