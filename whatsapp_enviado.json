@@ -1,6 +1,8 @@
 {
-  "fecha": "16/10/2026",
-  "hora": "00:00:00",
-  "metodo": "reset",
-  "nota": "Reset temporal para reenviar con orden cronológico"
+  "fecha": "17/10/2026",
+  "hora": "23:05:49",
+  "metodo": "callmebot",
+  "caracteres_msg1": 901,
+  "caracteres_msg2": 777,
+  "formato": "Msg1 Super11 compacto orden cronológico + Msg2 demoras"
 }
