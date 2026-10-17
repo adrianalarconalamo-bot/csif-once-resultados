@@ -172,17 +172,14 @@ if dupla:
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 if super11:
-    # Compacto: horas cortas + 21:15 PRIMERO (el más reciente no se pierde si CallMeBot trunca)
+    # Compacto, orden cronológico: 10 → 12 → 14 → 17 → 21
     lineas1.append("🔴 SUPER 11")
     horas_cortas = ["10", "12", "14", "17", "21"]
-    # Orden: 21, 17, 14, 12, 10 (más reciente primero)
-    orden = [4, 3, 2, 1, 0]
-    for idx in orden:
-        if idx < len(super11):
-            n = limpiar(super11[idx].get("numero"))
-            # Quitar espacios tras comas para ahorrar caracteres
-            n_compacto = n.replace(", ", ",").replace(" ", "")
-            lineas1.append(f"*{horas_cortas[idx]}* {n_compacto}")
+    for i, r in enumerate(super11):
+        n = limpiar(r.get("numero"))
+        n_compacto = n.replace(", ", ",").replace(" ", "")
+        hora = horas_cortas[i] if i < len(horas_cortas) else str(i + 1)
+        lineas1.append(f"*{hora}* {n_compacto}")
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 # PIE COMPACTO — sin líneas en blanco
@@ -237,7 +234,6 @@ for i in range(10):
     num = str(i)
     if num in primeras:
         fecha, dias = primeras[num]
-        # Quitar ceros a la izquierda del número de días si viene con 02, 05, etc.
         dias_limpio = str(int(dias)) if dias.isdigit() else dias
         palabra = "día" if dias_limpio == "1" else "días"
         lineas2.append(f"{emojis[i]}  {fecha}  →  {dias_limpio} {palabra}")
@@ -298,6 +294,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "Msg1 Super11 compacto (21 primero) + Msg2 demoras",
+    "formato": "Msg1 Super11 compacto orden cronológico + Msg2 demoras",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
