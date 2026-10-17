@@ -172,11 +172,17 @@ if dupla:
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 if super11:
+    # Compacto: horas cortas + 21:15 PRIMERO (el más reciente no se pierde si CallMeBot trunca)
     lineas1.append("🔴 SUPER 11")
-    horas = ["10:00", "12:00", "14:00", "17:00", "21:15"]
-    for i, r in enumerate(super11):
-        n = limpiar(r.get("numero"))
-        lineas1.append(f"*{horas[i]}*→{n}")
+    horas_cortas = ["10", "12", "14", "17", "21"]
+    # Orden: 21, 17, 14, 12, 10 (más reciente primero)
+    orden = [4, 3, 2, 1, 0]
+    for idx in orden:
+        if idx < len(super11):
+            n = limpiar(super11[idx].get("numero"))
+            # Quitar espacios tras comas para ahorrar caracteres
+            n_compacto = n.replace(", ", ",").replace(" ", "")
+            lineas1.append(f"*{horas_cortas[idx]}* {n_compacto}")
     lineas1.append("━━━━━━━━━━━━━━━━━━")
 
 # PIE COMPACTO — sin líneas en blanco
@@ -292,6 +298,6 @@ guardar_json("whatsapp_enviado.json", {
     "metodo": "callmebot",
     "caracteres_msg1": c1,
     "caracteres_msg2": c2,
-    "formato": "Msg1 + Msg2 demoras + pie compacto (lema + TEL + Buenas noches)",
+    "formato": "Msg1 Super11 compacto (21 primero) + Msg2 demoras",
 })
 print("✅ Enviado por WhatsApp (2 mensajes)")
