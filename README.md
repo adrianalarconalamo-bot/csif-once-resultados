@@ -2,19 +2,24 @@
 
 Resultados automáticos ONCE para CSIF — a partir de las 21:30 (hora española)
 
-## Workflow unificado (recomendado)
+## Workflow unificado
 
 | Canal              | Workflow                         | Secrets necesarios                                      |
 |--------------------|----------------------------------|---------------------------------------------------------|
 | Telegram + WhatsApp| `resultados-unificado.yml`       | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `CALLMEBOT_APIKEY`, `CALLMEBOT_PHONE` |
 
 Este workflow envía **a los dos canales en la misma ejecución**.
-Solo envía cuando están todos los resultados del día y a partir de las 21:30.
+
+- Solo envía cuando están **todos** los resultados del día y a partir de las **21:30**.
+- **Telegram** y **WhatsApp** reciben el **mismo mensaje original**.
+- WhatsApp parte el mensaje en trozos ≤999 caracteres (límite de CallMeBot) respetando saltos de línea.
+- Si un canal falla, el otro sigue intentando (`continue-on-error`).
+- Si aún no hay resultados del día, el job termina en verde y reintenta en la siguiente ejecución del schedule (cada 5 min).
 
 ### Cómo lanzarlo manualmente
 
 1. Ve a la pestaña **Actions**
-2. Selecciona **"Resultados ONCE (Telegram + WhatsApp)"**
+2. Selecciona **Resultados ONCE (Telegram + WhatsApp)**
 3. Pulsa **Run workflow**
 
 ### Configuración de WhatsApp (CallMeBot)
@@ -26,12 +31,7 @@ Solo envía cuando están todos los resultados del día y a partir de las 21:30.
    - `CALLMEBOT_APIKEY` → tu apikey
    - `CALLMEBOT_PHONE` → tu número con código de país (ej: `+34685138060`)
 
-### Workflows antiguos (opcional)
+### Nota sobre fiabilidad de GitHub Actions
 
-Los workflows antiguos (`resultados.yml` y `resultados-whatsapp.yml`) siguen existiendo por compatibilidad.
-Puedes desactivarlos en la pestaña Actions si quieres usar solo el unificado.
-
----
-
-**Nota sobre fiabilidad de GitHub Actions:**  
-Los workflows programados (`schedule`) de GitHub pueden retrasarse o no ejecutarse bajo carga. Si un día no llega el mensaje automático, lanza el workflow unificado manualmente.
+Los workflows programados (`schedule`) de GitHub pueden retrasarse bajo carga.  
+Si un día no llega el mensaje automático, lanza el workflow unificado **manualmente**.
