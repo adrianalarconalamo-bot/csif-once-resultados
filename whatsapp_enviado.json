@@ -1,8 +1,12 @@
 {
-  "fecha": "18/10/2026",
-  "hora": "22:26:15",
+  "fecha": "19/10/2026",
+  "hora": "23:10:03",
   "metodo": "callmebot",
-  "caracteres_msg1": 901,
-  "caracteres_msg2": 778,
-  "formato": "Msg1 Super11 compacto orden cronológico + Msg2 demoras"
+  "partes": 2,
+  "caracteres": [
+    991,
+    357
+  ],
+  "demoras": true,
+  "formato": "mismo mensaje original que Telegram (partido si >999 chars)"
 }
