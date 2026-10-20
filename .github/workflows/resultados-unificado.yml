@@ -125,8 +125,6 @@ jobs:
           from zoneinfo import ZoneInfo
           import requests
 
-          HOY = datetime.now(ZoneInfo("Europe/Madrid")).strftime("%d/%m/%Y")
-
           try:
               with open("telegram_enviado.json", encoding="utf-8") as f:
                   estado = json.load(f)
@@ -134,8 +132,9 @@ jobs:
               print("Los resultados todavía no han sido enviados a Telegram.")
               sys.exit(0)
 
-          if estado.get("fecha") != HOY:
-              print("El estado de Telegram no corresponde al día de hoy.")
+          fecha_ref = (estado.get("fecha") or "").strip()
+          if not fecha_ref:
+              print("telegram_enviado.json no tiene fecha. No se envían demoras.")
               sys.exit(0)
 
           try:
@@ -144,8 +143,8 @@ jobs:
           except FileNotFoundError:
               estado_demoras = {}
 
-          if estado_demoras.get("fecha") == HOY:
-              print("Las demoras de hoy ya fueron enviadas a Telegram.")
+          if estado_demoras.get("fecha") == fecha_ref:
+              print(f"Las demoras de {fecha_ref} ya fueron enviadas a Telegram.")
               sys.exit(0)
 
           token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -171,8 +170,8 @@ jobs:
               sys.exit(1)
 
           with open("demoras_enviadas.json", "w", encoding="utf-8") as f:
-              json.dump({"fecha": HOY}, f, ensure_ascii=False, indent=2)
-          print("Informe de demoras enviado correctamente a Telegram.")
+              json.dump({"fecha": fecha_ref}, f, ensure_ascii=False, indent=2)
+          print(f"Informe de demoras ({fecha_ref}) enviado correctamente a Telegram.")
           PY
 
       # -------------------------------------------------------

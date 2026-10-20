@@ -169,6 +169,18 @@ def formatear_dupla(valor):
     return f"{n:02d}", f"{anterior:02d}", f"{posterior:02d}"
 
 
+def formatear_bote(valor):
+    """Formatea importebote numérico como 10.000.000 €."""
+    texto = limpiar(valor).replace(".", "").replace(",", "").replace("€", "").strip()
+    if not texto or texto == "0":
+        return ""
+    try:
+        n = int(texto)
+    except ValueError:
+        return limpiar(valor)
+    return f"{n:,}".replace(",", ".") + " €"
+
+
 def separar_mi_dia(valor):
     """Separa fecha y número de la suerte de Mi Día."""
 
@@ -457,12 +469,17 @@ if super11:
     lineas.append("━━━━━━━━━━━━━━━━━━")
 
 if eurojackpot:
+    bote = formatear_bote(eurojackpot.get("importebote", ""))
     lineas += [
         "",
         "🇪🇺 EUROJACKPOT",
         "",
         f"🔢 {limpiar(eurojackpot.get('numero'))}",
         f"⭐ Estrellas: {limpiar(eurojackpot.get('serie'))}",
+    ]
+    if bote:
+        lineas.append(f"💰 Bote: {bote}")
+    lineas += [
         "",
         "━━━━━━━━━━━━━━━━━━",
     ]
