@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
 
   schedule:
-    # Cada 5 minutos en la ventana crítica (hora UTC).
-    # 19:30-19:55 UTC = 21:30-21:55 CEST
-    # 20:00-23:55 UTC = 22:00-01:55 CEST
-    - cron: "30-55/5 19 * * *"
+    # Ventana crítica ampliada y más densa (hora UTC)
+    # 19:00-19:55 UTC = 21:00-21:55 CEST  (cada 5 min)
+    # 20:00-23:55 UTC = 22:00-01:55 CEST  (cada 5 min)
+    # Así aumentamos mucho la probabilidad de que GitHub lo lance a tiempo
+    - cron: "*/5 19 * * *"
     - cron: "*/5 20-23 * * *"
 
 jobs:
