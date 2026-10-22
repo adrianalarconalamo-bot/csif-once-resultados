@@ -7,7 +7,6 @@ on:
     # Ventana crítica ampliada y más densa (hora UTC)
     # 19:00-19:55 UTC = 21:00-21:55 CEST  (cada 5 min)
     # 20:00-23:55 UTC = 22:00-01:55 CEST  (cada 5 min)
-    # Así aumentamos mucho la probabilidad de que GitHub lo lance a tiempo
     - cron: "*/5 19 * * *"
     - cron: "*/5 20-23 * * *"
 
@@ -65,6 +64,7 @@ jobs:
           hoy = ahora.strftime("%d/%m/%Y")
           ayer = (ahora.date() - timedelta(days=1)).strftime("%d/%m/%Y")
           permitir_ayer = ahora.hour < 3
+          dia = ahora.weekday()  # 0=lun … 6=dom
 
           if not os.path.exists("resultados.json"):
               print("No existe resultados.json → skip")
@@ -76,16 +76,35 @@ jobs:
               datos = json.load(f)
           resultados = datos.get("resultados", [])
 
-          de_hoy = [r for r in resultados if hoy in str(r.get("fecha", ""))]
-          de_ayer = [r for r in resultados if ayer in str(r.get("fecha", ""))] if permitir_ayer else []
+          def de_fecha(fecha):
+              return [r for r in resultados if fecha in str(r.get("fecha", ""))]
+
+          de_hoy = de_fecha(hoy)
+          de_ayer = de_fecha(ayer) if permitir_ayer else []
+          pool = de_hoy or de_ayer
+          fecha_ref = hoy if de_hoy else (ayer if de_ayer else hoy)
 
           print(f"Resultados de hoy ({hoy}): {len(de_hoy)}")
           if permitir_ayer:
               print(f"Resultados de ayer ({ayer}) [madrugada]: {len(de_ayer)}")
 
-          listo = "true" if (de_hoy or de_ayer) else "false"
+          # listo = hay algo que procesar (Telegram decidirá si está completo)
+          listo = "true" if pool else "false"
+
+          # completo = hay el sorteo principal del día (para logs)
+          tipos = " ".join(str(r.get("tipo", "")).upper() for r in pool)
+          if dia <= 3:
+              tiene_principal = "CUPÓN DIARIO" in tipos or "CUPON DIARIO" in tipos
+          elif dia == 4:
+              tiene_principal = "CUPONAZO" in tipos
+          else:
+              tiene_principal = "SUELDAZO" in tipos and "ADICIONAL" not in tipos
+
+          print(f"Sorteo principal presente: {tiene_principal}")
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"listo={listo}\n")
+              f.write(f"completo={'true' if tiene_principal else 'false'}\n")
           PY
 
       - name: Calcular demoras
@@ -102,7 +121,7 @@ jobs:
           echo "========================================"
 
       # -------------------------------------------------------
-      # TELEGRAM (formato original)
+      # TELEGRAM (formato original) — solo envía si está completo
       # -------------------------------------------------------
       - name: Enviar resultados a Telegram
         if: steps.check.outputs.listo == 'true'
@@ -122,8 +141,6 @@ jobs:
         run: |
           python - <<'PY'
           import os, json, sys
-          from datetime import datetime
-          from zoneinfo import ZoneInfo
           import requests
 
           try:
@@ -176,7 +193,7 @@ jobs:
           PY
 
       # -------------------------------------------------------
-      # WHATSAPP — MISMO formato que Telegram (partido si hace falta)
+      # WHATSAPP — solo si Telegram ya envió el mensaje completo
       # -------------------------------------------------------
       - name: Enviar resultados a WhatsApp (CallMeBot)
         if: steps.check.outputs.listo == 'true'

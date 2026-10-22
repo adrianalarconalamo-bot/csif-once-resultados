@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Envío a WhatsApp (CallMeBot) del MISMO mensaje que llega a Telegram.
-Versión reforzada: más espera entre mensajes, logs completos, reintentos.
+Versión reforzada: solo envía si el mensaje está completo (misma lógica que Telegram).
 """
 
 import json
@@ -24,6 +24,7 @@ PHONE = os.getenv("CALLMEBOT_PHONE")
 ARCHIVO_MENSAJE = "whatsapp.txt"
 ARCHIVO_DEMORAS = "demoras_texto.txt"
 ARCHIVO_ESTADO = "whatsapp_enviado.json"
+ARCHIVO_TELEGRAM = "telegram_enviado.json"
 LIMITE_CHARS = 950  # margen bajo 999
 
 
@@ -61,6 +62,33 @@ def partir_mensaje(texto, limite=LIMITE_CHARS):
             partes.append(trozo)
         restante = restante[corte:].lstrip("\n")
     return partes
+
+
+def mensaje_completo(texto, fecha_resultados):
+    """
+    Comprueba que whatsapp.txt es el mensaje real de hoy/ayer,
+    no un mensaje antiguo ni uno generado a medias.
+    """
+    if not texto:
+        return False
+    upper = texto.upper()
+    if fecha_resultados not in texto:
+        return False
+    # Debe incluir el sorteo principal del día
+    tiene_principal = (
+        "CUPÓN DIARIO" in upper
+        or "CUPON DIARIO" in upper
+        or "CUPONAZO" in upper
+        or "SUELDAZO" in upper
+    )
+    if not tiene_principal:
+        return False
+    # Señales mínimas de que el bloque de resultados está presente
+    if "TRIPLEX" not in upper and "MI DÍA" not in upper and "MI DIA" not in upper:
+        # En fin de semana puede no haber Triplex en el mensaje si solo hay Sueldazo;
+        # con principal ya basta.
+        pass
+    return True
 
 
 def enviar_callmebot(msg, etiqueta, reintentos=3):
@@ -126,7 +154,6 @@ def main():
     print("")
 
     # Permitir envío a partir de las 21:30, y también en madrugada (< 03:00)
-    # porque el cron sigue hasta ~01:55 CEST.
     en_ventana = (
         AHORA.hour > 21
         or (AHORA.hour == 21 and AHORA.minute >= 30)
@@ -136,7 +163,7 @@ def main():
         print(f"[{AHORA.strftime('%H:%M')}] Todavía no son las 21:30. No se envía.")
         sys.exit(0)
 
-    # Fecha de los resultados: preferir la que aparece en el mensaje / resultados.json
+    # Fecha de los resultados
     fecha_resultados = HOY
     try:
         with open("resultados.json", encoding="utf-8") as f:
@@ -154,9 +181,14 @@ def main():
         pass
     print(f"Fecha de resultados a enviar: {fecha_resultados}")
 
-    estado = cargar_json(ARCHIVO_ESTADO)
-    if isinstance(estado, dict) and estado.get("fecha") == fecha_resultados:
-        print(f"[{fecha_resultados}] WhatsApp ya enviado. No se vuelve a enviar.")
+    # Solo enviar si Telegram YA envió el mensaje completo de esta fecha.
+    # Así evitamos mandar whatsapp.txt antiguo o incompleto.
+    estado_tg = cargar_json(ARCHIVO_TELEGRAM)
+    if not isinstance(estado_tg, dict) or estado_tg.get("fecha") != fecha_resultados:
+        print(
+            f"Telegram aún no ha enviado los resultados de {fecha_resultados}. "
+            "WhatsApp espera a que el mensaje esté completo."
+        )
         sys.exit(0)
 
     if not os.path.exists(ARCHIVO_MENSAJE):
@@ -164,17 +196,29 @@ def main():
         sys.exit(0)
 
     with open(ARCHIVO_MENSAJE, "r", encoding="utf-8") as f:
-        mensaje_completo = f.read().strip()
+        mensaje_completo_txt = f.read().strip()
 
-    if not mensaje_completo:
+    if not mensaje_completo_txt:
         print(f"AVISO: {ARCHIVO_MENSAJE} vacío.")
         sys.exit(0)
 
-    if "---MENSAJE 2---" in mensaje_completo:
-        mensaje_completo = mensaje_completo.split("---MENSAJE 2---", 1)[0].strip()
+    if "---MENSAJE 2---" in mensaje_completo_txt:
+        mensaje_completo_txt = mensaje_completo_txt.split("---MENSAJE 2---", 1)[0].strip()
 
-    print(f"Mensaje original (mismo que Telegram): {len(mensaje_completo)} caracteres")
-    partes = partir_mensaje(mensaje_completo)
+    if not mensaje_completo(mensaje_completo_txt, fecha_resultados):
+        print(
+            f"AVISO: {ARCHIVO_MENSAJE} no contiene un mensaje completo de {fecha_resultados} "
+            "(falta fecha o cupón/cuponazo/sueldazo). NO se marca como enviado."
+        )
+        sys.exit(0)
+
+    estado = cargar_json(ARCHIVO_ESTADO)
+    if isinstance(estado, dict) and estado.get("fecha") == fecha_resultados:
+        print(f"[{fecha_resultados}] WhatsApp ya enviado correctamente. No se vuelve a enviar.")
+        sys.exit(0)
+
+    print(f"Mensaje original (mismo que Telegram): {len(mensaje_completo_txt)} caracteres")
+    partes = partir_mensaje(mensaje_completo_txt)
     print(f"Se enviará en {len(partes)} parte(s)")
 
     longitudes = []
@@ -208,6 +252,7 @@ def main():
         "caracteres": longitudes,
         "demoras": demoras_enviadas,
         "formato": "mismo mensaje original que Telegram (partido si >950 chars)",
+        "completo": True,
     })
 
     print("")

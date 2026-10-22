@@ -15,6 +15,8 @@ TZ = ZoneInfo("Europe/Madrid")
 
 AHORA = datetime.now(TZ)
 HOY = AHORA.strftime("%d/%m/%Y")
+# 0=lunes … 6=domingo
+DIA_SEMANA = AHORA.weekday()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
@@ -285,25 +287,42 @@ dupla.sort(key=numero_sorteo)
 super11.sort(key=numero_sorteo)
 
 # ============================================================
-# COMPROBAR COMPLETITUD
+# COMPROBAR COMPLETITUD (según día de la semana)
+# Lun-Jue: Cupón Diario | Vie: Cuponazo | Sáb-Dom: Sueldazo
 # ============================================================
 
 faltan = []
 
-if not cupon_diario:
-    faltan.append("Cupón Diario")
+# Día de la semana de la FECHA de resultados (no del reloj, por si es madrugada)
+try:
+    partes_f = FECHA_RESULTADOS.split("/")
+    fecha_obj = datetime(
+        int(partes_f[2]), int(partes_f[1]), int(partes_f[0]), tzinfo=TZ
+    )
+    dia_res = fecha_obj.weekday()
+except Exception:
+    dia_res = DIA_SEMANA
 
-if not mi_dia:
-    faltan.append("Mi Día")
+if dia_res <= 3:  # lun-jue
+    if not cupon_diario:
+        faltan.append("Cupón Diario")
+elif dia_res == 4:  # viernes
+    if not cuponazo:
+        faltan.append("Cuponazo")
+else:  # sáb-dom
+    if not sueldazo_principal:
+        faltan.append("Sueldazo")
 
-if len(triplex) < 5:
-    faltan.append(f"Triplex ({len(triplex)}/5)")
-
-if len(dupla) < 5:
-    faltan.append(f"Dupla ({len(dupla)}/5)")
-
-if len(super11) < 5:
-    faltan.append(f"Super 11 ({len(super11)}/5)")
+# Mi Día / Triplex / Dupla / Super11 solo se exigen entre semana
+if dia_res <= 4:
+    if not mi_dia:
+        faltan.append("Mi Día")
+    if len(triplex) < 5:
+        faltan.append(f"Triplex ({len(triplex)}/5)")
+    if len(dupla) < 5:
+        faltan.append(f"Dupla ({len(dupla)}/5)")
+    if len(super11) < 5:
+        faltan.append(f"Super 11 ({len(super11)}/5)")
 
 # ============================================================
 # NO ENVIAR ANTES DE LAS 21:30 (salvo madrugada)
