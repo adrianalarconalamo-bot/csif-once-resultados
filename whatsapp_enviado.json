@@ -1,4 +1,13 @@
 {
-  "fecha": "",
-  "nota": "Reset para permitir reenvío del mensaje completo de hoy tras el falso positivo de las 21:33"
+  "fecha": "22/10/2026",
+  "hora": "22:06:58",
+  "metodo": "callmebot",
+  "partes": 2,
+  "caracteres": [
+    929,
+    420
+  ],
+  "demoras": true,
+  "formato": "mismo mensaje original que Telegram (partido si >950 chars)",
+  "completo": true
 }
