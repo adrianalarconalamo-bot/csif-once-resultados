@@ -1,11 +1,11 @@
 {
-  "fecha": "22/10/2026",
-  "hora": "22:06:58",
+  "fecha": "23/10/2026",
+  "hora": "21:47:42",
   "metodo": "callmebot",
   "partes": 2,
   "caracteres": [
-    929,
-    420
+    925,
+    514
   ],
   "demoras": true,
   "formato": "mismo mensaje original que Telegram (partido si >950 chars)",
