@@ -431,6 +431,20 @@ if sueldazo_principal:
         "━━━━━━━━━━━━━━━━━━",
     ]
 
+# Premios adicionales del Sueldazo (fin de semana)
+if sueldazo_adicionales:
+    lineas += [
+        "",
+        "💰 PREMIOS ADICIONALES SUELDAZO",
+        "",
+    ]
+    for i, r in enumerate(sueldazo_adicionales, 1):
+        lineas.append(
+            f"🔢 {i}º → Número: {limpiar(r.get('numero'))}  ·  Serie: {limpiar(r.get('serie'))}"
+        )
+        lineas.append("")
+    lineas.append("━━━━━━━━━━━━━━━━━━")
+
 if mi_dia:
     fecha_mi_dia, numero_suerte = separar_mi_dia(mi_dia.get("numero", ""))
     lineas += [
