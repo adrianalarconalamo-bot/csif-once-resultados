@@ -1,22 +1,15 @@
 #!/usr/bin/env python3
-"""Descarga y ejecuta la versión corregida de generar_whatsapp."""
-import urllib.request
+"""Ejecuta la versión local de generar_whatsapp_core (sin descargar de GitHub)."""
 import runpy
-import tempfile
 import os
+import sys
 
-URL = (
-    "https://raw.githubusercontent.com/adrianalarconalamo-bot/"
-    "csif-once-resultados/main/generar_whatsapp_core.py"
-)
+base = os.path.dirname(os.path.abspath(__file__))
+core = os.path.join(base, "generar_whatsapp_core.py")
 
-print("Descargando generar_whatsapp_core.py (versión madrugada)...")
-req = urllib.request.Request(URL, headers={"User-Agent": "csif-once-bot"})
-with urllib.request.urlopen(req, timeout=30) as r:
-    codigo = r.read().decode("utf-8")
+if not os.path.isfile(core):
+    print(f"ERROR: no existe {core}")
+    sys.exit(1)
 
-path = os.path.join(tempfile.gettempdir(), "generar_whatsapp_core_runtime.py")
-with open(path, "w", encoding="utf-8") as f:
-    f.write(codigo)
-print(f"Ejecutando {path} ({len(codigo)} chars)...")
-runpy.run_path(path, run_name="__main__")
+print(f"Ejecutando {core} (versión local)...")
+runpy.run_path(core, run_name="__main__")

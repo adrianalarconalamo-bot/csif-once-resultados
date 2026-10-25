@@ -2,6 +2,7 @@
 """
 Actualizador de resultados ONCE para CSIF
 Versión robusta: no falla en rojo si aún no hay resultados de hoy.
+Parsea el campo adic del RSS del Sueldazo (premios adicionales).
 """
 
 import json
@@ -208,6 +209,33 @@ def buscar_bote(campos):
     return bote if bote else "0"
 
 
+def expandir_adicionales_sueldazo(resultado, adic_raw):
+    """
+    El RSS del Sueldazo trae los 4 adicionales en 'adic' como:
+    54442011-56716005-63320003-81511013  (5 dígitos número + 3 dígitos serie)
+    """
+    extras = []
+    adic = limpiar_texto(adic_raw or "")
+    if not adic:
+        return extras
+
+    fecha = resultado.get("fecha", "")
+    for trozo in re.split(r"[-,;\s]+", adic):
+        trozo = trozo.strip()
+        if len(trozo) == 8 and trozo.isdigit():
+            numero, serie = trozo[:5], trozo[5:]
+            extras.append({
+                "tipo": "Sueldazo adicional",
+                "fecha": fecha,
+                "numero": numero,
+                "serie": serie,
+                "importebote": "0",
+                "_fuente": "rss-adic",
+            })
+            print(f"    ✓ SUELDAZO ADICIONAL (RSS): {numero} | serie {serie}")
+    return extras
+
+
 def obtener_resultados_rss():
     print("\n[1] Obteniendo resultados del RSS...")
     contenido = descargar_url(RSS_URL)
@@ -230,6 +258,10 @@ def obtener_resultados_rss():
             "_fuente": "rss",
         }
         resultados.append(resultado)
+
+        if tipo == "Sueldazo":
+            adic = buscar_campo(campos, ["adic", "adicionales", "additional"])
+            resultados.extend(expandir_adicionales_sueldazo(resultado, adic))
 
     print(f"  Resultados válidos del RSS: {len(resultados)}")
     return resultados
@@ -425,8 +457,6 @@ def filtrar_fecha_reciente(resultados):
         marca = " ← objetivo" if f == fecha_objetivo else ""
         print(f"    {f.strftime('%d/%m/%Y')}: {n} resultados{marca}")
 
-    # El cron llega hasta ~01:55 CEST del día siguiente.
-    # Si estamos en madrugada (< 03:00), aceptamos también los resultados de ayer.
     ahora = datetime.now(ZoneInfo("Europe/Madrid"))
     hora = ahora.hour
     ayer = hoy - timedelta(days=1)
