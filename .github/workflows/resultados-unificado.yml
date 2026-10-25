@@ -4,11 +4,12 @@ on:
   workflow_dispatch:
 
   schedule:
-    # Ventana crítica ampliada y más densa (hora UTC)
-    # 19:00-19:55 UTC = 21:00-21:55 CEST  (cada 5 min)
-    # 20:00-23:55 UTC = 22:00-01:55 CEST  (cada 5 min)
-    - cron: "*/5 19 * * *"
-    - cron: "*/5 20-23 * * *"
+    # Hora UTC. Tras el cambio a CET (UTC+1): 20 UTC = 21:00 Madrid.
+    # Con CEST (UTC+2): 19 UTC = 21:00 Madrid. Cubrimos ambos.
+    # Cada 5 min desde 19:00 hasta 23:55 UTC (~21:00–01:55 hora Madrid).
+    - cron: "*/5 19-23 * * *"
+    # Madrugada por si GitHub retrasa el schedule
+    - cron: "*/10 0-1 * * *"
 
 jobs:
 
@@ -34,9 +35,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 lxml
 
-      # -------------------------------------------------------
-      # GENERAR RESULTADOS (nunca falla en rojo por "aún no hay datos")
-      # -------------------------------------------------------
       - name: Generar resultados ONCE
         id: generar
         run: |
@@ -64,7 +62,6 @@ jobs:
           hoy = ahora.strftime("%d/%m/%Y")
           ayer = (ahora.date() - timedelta(days=1)).strftime("%d/%m/%Y")
           permitir_ayer = ahora.hour < 3
-          dia = ahora.weekday()  # 0=lun … 6=dom
 
           if not os.path.exists("resultados.json"):
               print("No existe resultados.json → skip")
@@ -88,17 +85,28 @@ jobs:
           if permitir_ayer:
               print(f"Resultados de ayer ({ayer}) [madrugada]: {len(de_ayer)}")
 
-          # listo = hay algo que procesar (Telegram decidirá si está completo)
           listo = "true" if pool else "false"
 
-          # completo = hay el sorteo principal del día (para logs)
+          # weekday de la fecha de resultados, no del reloj
+          try:
+              d, m, y = fecha_ref.split("/")
+              dia = datetime(int(y), int(m), int(d)).weekday()
+          except Exception:
+              dia = ahora.weekday()
+
           tipos = " ".join(str(r.get("tipo", "")).upper() for r in pool)
           if dia <= 3:
               tiene_principal = "CUPÓN DIARIO" in tipos or "CUPON DIARIO" in tipos
           elif dia == 4:
               tiene_principal = "CUPONAZO" in tipos
           else:
-              tiene_principal = "SUELDAZO" in tipos and "ADICIONAL" not in tipos
+              tiene_principal = "SUELDAZO" in tipos and "ADICIONAL" not in tipos.split("SUELDAZO")[0]
+              # más simple: hay algún Sueldazo que no sea adicional
+              tiene_principal = any(
+                  "SUELDAZO" in str(r.get("tipo", "")).upper()
+                  and "ADICIONAL" not in str(r.get("tipo", "")).upper()
+                  for r in pool
+              )
 
           print(f"Sorteo principal presente: {tiene_principal}")
 
@@ -120,9 +128,6 @@ jobs:
           cat demoras_texto.txt || true
           echo "========================================"
 
-      # -------------------------------------------------------
-      # TELEGRAM (formato original) — solo envía si está completo
-      # -------------------------------------------------------
       - name: Enviar resultados a Telegram
         if: steps.check.outputs.listo == 'true'
         id: telegram
@@ -192,9 +197,6 @@ jobs:
           print(f"Informe de demoras ({fecha_ref}) enviado correctamente a Telegram.")
           PY
 
-      # -------------------------------------------------------
-      # WHATSAPP — solo si Telegram ya envió el mensaje completo
-      # -------------------------------------------------------
       - name: Enviar resultados a WhatsApp (CallMeBot)
         if: steps.check.outputs.listo == 'true'
         continue-on-error: true
@@ -203,9 +205,6 @@ jobs:
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
         run: python enviar_whatsapp.py
 
-      # -------------------------------------------------------
-      # GUARDAR ESTADO (aunque un canal haya fallado)
-      # -------------------------------------------------------
       - name: Guardar resultados y estados
         if: steps.check.outputs.listo == 'true'
         run: |

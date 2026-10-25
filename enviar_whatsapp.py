@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Envío a WhatsApp (CallMeBot) del MISMO mensaje que llega a Telegram.
-Versión reforzada: solo envía si el mensaje está completo (misma lógica que Telegram).
+Versión reforzada: envía si el mensaje está completo, aunque Telegram haya fallado.
 """
 
 import json
@@ -74,7 +74,6 @@ def mensaje_completo(texto, fecha_resultados):
     upper = texto.upper()
     if fecha_resultados not in texto:
         return False
-    # Debe incluir el sorteo principal del día
     tiene_principal = (
         "CUPÓN DIARIO" in upper
         or "CUPON DIARIO" in upper
@@ -83,11 +82,6 @@ def mensaje_completo(texto, fecha_resultados):
     )
     if not tiene_principal:
         return False
-    # Señales mínimas de que el bloque de resultados está presente
-    if "TRIPLEX" not in upper and "MI DÍA" not in upper and "MI DIA" not in upper:
-        # En fin de semana puede no haber Triplex en el mensaje si solo hay Sueldazo;
-        # con principal ya basta.
-        pass
     return True
 
 
@@ -153,7 +147,6 @@ def main():
     print(f"PHONE configurado: {'SÍ' if PHONE else 'NO'}  APIKEY: {'SÍ' if APIKEY else 'NO'}")
     print("")
 
-    # Permitir envío a partir de las 21:30, y también en madrugada (< 03:00)
     en_ventana = (
         AHORA.hour > 21
         or (AHORA.hour == 21 and AHORA.minute >= 30)
@@ -163,7 +156,6 @@ def main():
         print(f"[{AHORA.strftime('%H:%M')}] Todavía no son las 21:30. No se envía.")
         sys.exit(0)
 
-    # Fecha de los resultados
     fecha_resultados = HOY
     try:
         with open("resultados.json", encoding="utf-8") as f:
@@ -181,15 +173,16 @@ def main():
         pass
     print(f"Fecha de resultados a enviar: {fecha_resultados}")
 
-    # Solo enviar si Telegram YA envió el mensaje completo de esta fecha.
-    # Así evitamos mandar whatsapp.txt antiguo o incompleto.
+    # Preferible: Telegram ya envió. Si no, aún así enviamos si el mensaje está completo.
     estado_tg = cargar_json(ARCHIVO_TELEGRAM)
-    if not isinstance(estado_tg, dict) or estado_tg.get("fecha") != fecha_resultados:
+    tg_ok = isinstance(estado_tg, dict) and estado_tg.get("fecha") == fecha_resultados
+    if tg_ok:
+        print(f"Telegram ya envió {fecha_resultados}. WhatsApp procede.")
+    else:
         print(
-            f"Telegram aún no ha enviado los resultados de {fecha_resultados}. "
-            "WhatsApp espera a que el mensaje esté completo."
+            f"Telegram aún no marca {fecha_resultados} como enviado. "
+            "WhatsApp enviará si whatsapp.txt está completo (independiente)."
         )
-        sys.exit(0)
 
     if not os.path.exists(ARCHIVO_MENSAJE):
         print(f"AVISO: no existe {ARCHIVO_MENSAJE}.")
@@ -253,6 +246,7 @@ def main():
         "demoras": demoras_enviadas,
         "formato": "mismo mensaje original que Telegram (partido si >950 chars)",
         "completo": True,
+        "telegram_previo": tg_ok,
     })
 
     print("")
