@@ -1,122 +1,129 @@
 {
-  "actualizado": "03/11/2026 02:27",
+  "actualizado": "03/11/2026 21:45",
   "resultados": [
     {
       "tipo": "Cupón Diario",
-      "fecha": "Lunes, 02/11/2026",
-      "numero": "53083",
-      "serie": "002",
+      "fecha": "Martes, 03/11/2026",
+      "numero": "16332",
+      "serie": "031",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 1",
-      "numero": "285",
+      "fecha": "Martes, 03/11/2026, Sorteo 1",
+      "numero": "384",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 2",
-      "numero": "744",
+      "fecha": "Martes, 03/11/2026, Sorteo 2",
+      "numero": "390",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 3",
-      "numero": "891",
+      "fecha": "Martes, 03/11/2026, Sorteo 3",
+      "numero": "187",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 4",
-      "numero": "921",
+      "fecha": "Martes, 03/11/2026, Sorteo 4",
+      "numero": "760",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Triplex de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 5",
-      "numero": "583",
+      "fecha": "Martes, 03/11/2026, Sorteo 5",
+      "numero": "779",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Mi Día",
-      "fecha": "Lunes, 02/11/2026",
-      "numero": "08 JUL 1952 08",
+      "fecha": "Martes, 03/11/2026",
+      "numero": "13 MAR 2000 02",
       "serie": "",
       "importebote": "0"
     },
     {
+      "tipo": "Eurojackpot",
+      "fecha": "Martes, 03/11/2026",
+      "numero": "02,05,12,32,43",
+      "serie": "01,03",
+      "importebote": "44000000"
+    },
+    {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 1",
+      "fecha": "Martes, 03/11/2026, Sorteo 1",
       "numero": "10",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 2",
-      "numero": "05",
+      "fecha": "Martes, 03/11/2026, Sorteo 2",
+      "numero": "02",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 3",
-      "numero": "01",
+      "fecha": "Martes, 03/11/2026, Sorteo 3",
+      "numero": "11",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 4",
-      "numero": "10",
+      "fecha": "Martes, 03/11/2026, Sorteo 4",
+      "numero": "02",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Dupla de la ONCE",
-      "fecha": "Lunes, 02/11/2026, Sorteo 5",
-      "numero": "13",
+      "fecha": "Martes, 03/11/2026, Sorteo 5",
+      "numero": "12",
       "serie": "",
       "importebote": "0"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Lunes, 02/11/2026, Sorteo 1",
-      "numero": "02,06,14,20,23,24,34,42,48,49,51,56,62,72,73,75,77,82,83,84",
+      "fecha": "Martes, 03/11/2026, Sorteo 1",
+      "numero": "09,10,15,16,18,20,36,37,43,45,52,61,63,65,67,71,74,81,84,85",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Lunes, 02/11/2026, Sorteo 2",
-      "numero": "06,09,11,12,15,18,20,32,33,37,54,58,59,60,62,66,69,72,78,81",
+      "fecha": "Martes, 03/11/2026, Sorteo 2",
+      "numero": "07,10,13,15,18,19,20,24,27,28,39,47,48,64,66,70,72,73,74,77",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Lunes, 02/11/2026, Sorteo 3",
-      "numero": "03,05,07,09,15,16,28,35,38,48,51,52,53,59,66,68,70,71,77,79",
+      "fecha": "Martes, 03/11/2026, Sorteo 3",
+      "numero": "01,03,09,15,16,18,24,26,27,31,32,39,47,52,53,54,66,74,79,85",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Lunes, 02/11/2026, Sorteo 4",
-      "numero": "04,05,09,10,21,24,28,29,32,33,41,45,54,57,59,60,61,62,68,78",
+      "fecha": "Martes, 03/11/2026, Sorteo 4",
+      "numero": "05,07,09,14,17,21,31,34,37,41,42,52,54,58,64,67,70,74,77,78",
       "serie": "",
       "importebote": "1000000"
     },
     {
       "tipo": "Super 11",
-      "fecha": "Lunes, 02/11/2026, Sorteo 5",
-      "numero": "04,05,08,13,17,18,20,25,26,28,36,41,42,46,62,65,66,74,75,85",
+      "fecha": "Martes, 03/11/2026, Sorteo 5",
+      "numero": "06,08,12,17,18,21,26,30,32,33,42,43,45,55,59,62,63,67,72,80",
       "serie": "",
       "importebote": "1000000"
     }
