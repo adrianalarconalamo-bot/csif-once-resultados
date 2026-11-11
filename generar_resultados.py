@@ -3,6 +3,7 @@
 Actualizador de resultados ONCE para CSIF
 Versión robusta: no falla en rojo si aún no hay resultados de hoy.
 Parsea el campo adic del RSS del Sueldazo (premios adicionales).
+Incluye soporte para Sorteo Extraordinario 11/11 (Once del Once).
 """
 
 import json
@@ -27,6 +28,24 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml,text/xml,*/*",
     "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
 }
+
+# Páginas de sorteos extraordinarios conocidos (fácil de ampliar)
+EXTRAORDINARIOS = [
+    {
+        "nombre": "Sorteo Extraordinario 11/11",
+        "url": "https://www.juegosonce.es/resultados-once-del-once-de-la-once",
+        "keywords": ["11/11", "once del once", "sorteo 11/11", "extraordinario 11"],
+        # Solo tiene sentido el 11 de noviembre
+        "solo_si_mes_dia": (11, 11),
+    },
+    # Futuros extraordinarios se pueden añadir aquí, por ejemplo:
+    # {
+    #     "nombre": "Sorteo Extraordinario de Navidad",
+    #     "url": "https://www.juegosonce.es/resultados-...
+    #     "keywords": ["navidad", "extraordinario de navidad"],
+    #     "solo_si_mes_dia": (12, 22),  # o None para siempre intentar
+    # },
+]
 
 
 def limpiar_texto(texto):
@@ -160,6 +179,7 @@ def detectar_tipo(campos):
         ("Dupla de la ONCE", ["dupla"]),
         ("Super 11", ["super 11", "súper 11", "superonce", "super once"]),
         ("Eurojackpot", ["eurojackpot"]),
+        ("Sorteo Extraordinario 11/11", ["11/11", "once del once", "sorteo 11/11"]),
     ]
     for nombre, palabras in patrones:
         for palabra in palabras:
@@ -385,6 +405,99 @@ def extraer_sueldazo_desde_web(url):
     return resultados
 
 
+def extraer_extraordinario(config):
+    """
+    Extrae el número principal + todos los adicionales de un sorteo extraordinario.
+    Devuelve lista de dicts (principal + adicionales).
+    """
+    nombre = config["nombre"]
+    url = config["url"]
+    keywords = config.get("keywords", [])
+
+    # Restricción de fecha (ej. solo el 11/11)
+    solo_si = config.get("solo_si_mes_dia")
+    hoy = datetime.now(ZoneInfo("Europe/Madrid")).date()
+    if solo_si:
+        mes, dia = solo_si
+        if not (hoy.month == mes and hoy.day == dia):
+            # También permitimos el día siguiente por si el schedule llega de madrugada
+            ayer = hoy - timedelta(days=1)
+            if not (ayer.month == mes and ayer.day == dia):
+                print(f"  → Saltando {nombre} (solo se ejecuta el {dia:02d}/{mes:02d})")
+                return []
+
+    print(f"  → Intentando {nombre}...")
+    contenido = descargar_url(url)
+    if not contenido:
+        return []
+
+    texto = texto_html(contenido)
+    texto_lower = texto.lower()
+
+    # Comprobar que la página realmente habla del sorteo
+    if keywords and not any(k in texto_lower for k in keywords):
+        print(f"    AVISO: la página no parece contener {nombre}")
+        return []
+
+    fecha = extraer_fecha(texto)
+    if not fecha:
+        print(f"    AVISO: no se encontró fecha para {nombre}")
+        return []
+
+    fecha_formateada = formatear_fecha(fecha)
+
+    # Patrones flexibles: "Número: 69944, serie: 048" o "Número 69944 Serie 048"
+    patrones = [
+        r"N[uú]mero\s*[:\-]?\s*([0-9]{5}).{0,40}?[Ss]erie\s*[:\-]?\s*([0-9]{3})",
+        r"N[uú]mero\s+([0-9]{5}).{0,40}?[Ss]erie\s+([0-9]{3})",
+        r"([0-9]{5})\s*,\s*serie\s*[:\-]?\s*([0-9]{3})",
+        r"([0-9]{5})\s*(?:serie|Serie)\s*[:\-]?\s*([0-9]{3})",
+    ]
+
+    parejas = []
+    for p in patrones:
+        encontradas = re.findall(p, texto, re.IGNORECASE | re.DOTALL)
+        for numero, serie in encontradas:
+            pareja = (numero, serie)
+            if pareja not in parejas:
+                parejas.append(pareja)
+
+    if not parejas:
+        print(f"    AVISO: no se encontró ningún número/serie de {nombre}")
+        return []
+
+    resultados = []
+
+    # Primer par = premio principal
+    numero_principal, serie_principal = parejas[0]
+    resultados.append({
+        "tipo": nombre,
+        "fecha": fecha_formateada,
+        "numero": numero_principal,
+        "serie": serie_principal,
+        "importebote": "11000000",  # 11 millones (informativo)
+        "_fuente": "web-extra",
+        "_fecha_obj": fecha,
+    })
+    print(f"    ✓ {nombre} PRINCIPAL: {numero_principal} | serie {serie_principal}")
+
+    # Resto = adicionales (normalmente 11)
+    for i, (numero, serie) in enumerate(parejas[1:], start=1):
+        resultados.append({
+            "tipo": f"{nombre} adicional",
+            "fecha": fecha_formateada,
+            "numero": numero,
+            "serie": serie,
+            "importebote": "1000000",
+            "_fuente": "web-extra",
+            "_fecha_obj": fecha,
+        })
+        print(f"    ✓ {nombre} ADICIONAL {i}: {numero} | serie {serie}")
+
+    print(f"    Total {nombre}: 1 principal + {len(parejas)-1} adicionales")
+    return resultados
+
+
 def obtener_cupones_oficiales():
     print("\n[2] Obteniendo cupones desde web oficial...")
     resultados = []
@@ -401,6 +514,11 @@ def obtener_cupones_oficiales():
 
     url_sueldazo = "https://www.juegosonce.es/resultados-sueldazo-fin-de-semana"
     resultados.extend(extraer_sueldazo_desde_web(url_sueldazo))
+
+    # Sorteos extraordinarios
+    print("\n[2b] Comprobando sorteos extraordinarios...")
+    for config in EXTRAORDINARIOS:
+        resultados.extend(extraer_extraordinario(config))
 
     print(f"  Resultados válidos de web oficial: {len(resultados)}")
     return resultados
@@ -506,7 +624,7 @@ def guardar_resultados(resultados):
     print(f"\n[4] {OUTPUT_FILE} creado correctamente.")
     print(f"  Resultados finales guardados: {len(resultados)}")
     for r in resultados:
-        print(f"    {r['tipo']:25} | {r['fecha']:22} | {r['numero']:30} | serie: {r.get('serie', '')}")
+        print(f"    {r['tipo']:35} | {r['fecha']:22} | {r['numero']:30} | serie: {r.get('serie', '')}")
 
 
 def main():
