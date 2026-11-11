@@ -252,6 +252,9 @@ cuponazo = None
 sueldazo_principal = None
 sueldazo_adicionales = []
 
+extra_principal = None
+extra_adicionales = []
+
 mi_dia = None
 
 triplex = []
@@ -271,6 +274,10 @@ for r in resultados_hoy:
         sueldazo_adicionales.append(r)
     elif es_tipo(tipo, "Sueldazo"):
         sueldazo_principal = r
+    elif es_tipo(tipo, "Sorteo Extraordinario 11/11 adicional", "Extraordinario 11/11 adicional"):
+        extra_adicionales.append(r)
+    elif es_tipo(tipo, "Sorteo Extraordinario 11/11", "Extraordinario 11/11", "Once del Once"):
+        extra_principal = r
     elif es_tipo(tipo, "Mi Día", "Mi Dia"):
         mi_dia = r
     elif es_tipo(tipo, "Triplex"):
@@ -323,6 +330,11 @@ if dia_res <= 4:
         faltan.append(f"Dupla ({len(dupla)}/5)")
     if len(super11) < 5:
         faltan.append(f"Super 11 ({len(super11)}/5)")
+
+# El 11/11 exigimos el extraordinario (si es ese día)
+es_11_11 = FECHA_RESULTADOS.startswith("11/11/")
+if es_11_11 and not extra_principal:
+    faltan.append("Sorteo Extraordinario 11/11")
 
 # ============================================================
 # NO ENVIAR ANTES DE LAS 21:30 (salvo madrugada)
@@ -397,6 +409,27 @@ lineas = [
     "",
     "━━━━━━━━━━━━━━━━━━",
 ]
+
+# Sorteo Extraordinario 11/11 (prioridad alta, al principio)
+if extra_principal:
+    lineas += [
+        "",
+        "🌟🎯 SORTEO EXTRAORDINARIO 11/11",
+        "",
+        f"🏆 PRIMER PREMIO (11.000.000 €)",
+        f"🔢 Número: {limpiar(extra_principal.get('numero'))}",
+        f"🔖 Serie: {limpiar(extra_principal.get('serie'))}",
+        "",
+    ]
+    if extra_adicionales:
+        lineas.append("💎 PREMIOS DE 1.000.000 € (adicionales)")
+        lineas.append("")
+        for i, r in enumerate(extra_adicionales, 1):
+            lineas.append(
+                f"  {i:2d}. Número {limpiar(r.get('numero'))}  ·  Serie {limpiar(r.get('serie'))}"
+            )
+        lineas.append("")
+    lineas.append("━━━━━━━━━━━━━━━━━━")
 
 if cupon_diario:
     lineas += [
